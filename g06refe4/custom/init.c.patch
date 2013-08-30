@@ -1,0 +1,36 @@
+diff --git a/init/init.c b/init/init.c
+index ecdf2f7..fc451bb 100755
+--- a/init/init.c
++++ b/init/init.c
+@@ -584,6 +584,23 @@ static int logo_init_action(int nargs, char **args)
+     }
+     return 0;
+ }
++//gadmei +
++void close_OSD1_logo(void)
++{
++    #define close_OSD1_logo_path "/sys/class/graphics/fb1/blank"
++	FILE* fp = fopen(close_OSD1_logo_path,"w+");
++	char* content="1";
++	if(fp == NULL)
++	{
++	    fclose(fp);
++		return;
++	}
++	if(EOF == fputc(* content,fp))
++	;
++	fclose(fp);
++    return;
++}
++//gadmei -
+ static int console_init_action(int nargs, char **args)
+ {
+     int fd;
+@@ -627,6 +644,7 @@ static int console_init_action(int nargs, char **args)
+             close(fd);
+         }
+     }
++    close_OSD1_logo();//gadmei
+     return 0;
+ }
+ 

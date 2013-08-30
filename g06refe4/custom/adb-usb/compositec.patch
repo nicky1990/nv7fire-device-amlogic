@@ -1,0 +1,23 @@
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index 604185d..1453610 100755
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -1097,6 +1097,7 @@ composite_unbind(struct usb_gadget *gadget)
+ 		usb_ep_free_request(gadget->ep0, cdev->req);
+ 	}
+ 	device_remove_file(&gadget->dev, &dev_attr_suspended);
++	wake_lock_destroy(&cdev->wake_lock);
+ 	kfree(cdev);
+ 	set_gadget_data(gadget, NULL);
+ 	composite = NULL;
+@@ -1127,8 +1128,9 @@ static int composite_bind(struct usb_gadget *gadget)
+ 	spin_lock_init(&cdev->lock);
+ 	cdev->gadget = gadget;
+ 	set_gadget_data(gadget, cdev);
++	gadget->priv_data = &cdev->is_lock;
+ 	INIT_LIST_HEAD(&cdev->configs);
+-
++	wake_lock_init(&cdev->wake_lock, WAKE_LOCK_SUSPEND,  "usb_composite");
+ 	/* preallocate control response and buffer */
+ 	cdev->req = usb_ep_alloc_request(gadget->ep0, GFP_KERNEL);
+ 	if (!cdev->req)

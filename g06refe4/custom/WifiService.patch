@@ -1,0 +1,107 @@
+diff --git a/services/java/com/android/server/WifiService.java b/services/java/com/android/server/WifiService.java
+index 1db0b68..dd38e7d 100755
+--- a/services/java/com/android/server/WifiService.java
++++ b/services/java/com/android/server/WifiService.java
+@@ -52,6 +52,7 @@ import android.os.HandlerThread;
+ import android.os.IBinder;
+ import android.os.INetworkManagementService;
+ import android.os.Message;
++import android.os.PowerManager;
+ import android.os.RemoteException;
+ import android.os.ServiceManager;
+ import android.os.SystemProperties;
+@@ -87,9 +88,10 @@ import com.android.internal.R;
+ 
+ public class WifiService extends IWifiManager.Stub {
+     private static final String TAG = "WifiService";
+-    private static final boolean DBG = false;
++    private static final boolean DBG = true;
+ 
+     private final WifiStateMachine mWifiStateMachine;
++    private PowerManager mPowerManager;
+ 
+     private Context mContext;
+ 
+@@ -368,6 +370,7 @@ public class WifiService extends IWifiManager.Stub {
+         mWifiStateMachine.enableRssiPolling(true);
+         mBatteryStats = BatteryStatsService.getService();
+ 
++        mPowerManager = (PowerManager)mContext.getSystemService(Context.POWER_SERVICE);
+         mAlarmManager = (AlarmManager)mContext.getSystemService(Context.ALARM_SERVICE);
+         Intent idleIntent = new Intent(ACTION_DEVICE_IDLE, null);
+         mIdleIntent = PendingIntent.getBroadcast(mContext, IDLE_REQUEST, idleIntent, 0);
+@@ -377,16 +380,12 @@ public class WifiService extends IWifiManager.Stub {
+                     @Override
+                     public void onReceive(Context context, Intent intent) {
+                         mAirplaneModeOn.set(isAirplaneModeOn());
+-                        if(isAirplaneModeOn()){
+-                            setWifiEnabled(false);
+-                        }else{
+-                            setWifiEnabled(true);
+-                        }
+                         /* On airplane mode disable, restore wifi state if necessary */
+                         if (!mAirplaneModeOn.get() && (testAndClearWifiSavedState() ||
+                             mPersistWifiState.get() == WIFI_ENABLED_AIRPLANE_OVERRIDE)) {
+                                 persistWifiState(true);
+                         }
++						Slog.d(TAG, "update $$$ 1");
+                         updateWifiState();
+                     }
+                 },
+@@ -1032,6 +1031,7 @@ public class WifiService extends IWifiManager.Stub {
+                 mWifiStateMachine.sendBluetoothAdapterStateChange(state);
+             } else if (action.equals(TelephonyIntents.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED)) {
+                 mEmergencyCallbackMode = intent.getBooleanExtra("phoneinECMState", false);
++				Slog.d(TAG, "update $$$ 2");
+                 updateWifiState();
+             }
+         }
+@@ -1084,6 +1084,7 @@ public class WifiService extends IWifiManager.Stub {
+     private void setDeviceIdleAndUpdateWifi(boolean deviceIdle) {
+         mDeviceIdle = deviceIdle;
+         reportStartWorkSource();
++		Slog.d(TAG, "update $$$ 3");
+         updateWifiState();
+     }
+ 
+@@ -1096,6 +1097,12 @@ public class WifiService extends IWifiManager.Stub {
+         }
+         mWifiStateMachine.updateBatteryWorkSource(mTmpWorkSource);
+     }
++	private boolean isScreenOn() {
++		if (mPowerManager != null) {
++		    return mPowerManager.isScreenOn();
++		}
++		return true;
++    }
+ 
+     private void updateWifiState() {
+         boolean lockHeld = mLocks.hasLocks();
+@@ -1122,7 +1129,9 @@ public class WifiService extends IWifiManager.Stub {
+         }
+ 
+         if (shouldWifiBeEnabled()) {
+-            if (wifiShouldBeStarted) {
++			if (wifiShouldBeStarted && (isScreenOn()==false))
++				Slog.d(TAG, "lin : Got the wrong state");
++            if (wifiShouldBeStarted && isScreenOn()) {
+                 reportStartWorkSource();
+                 mWifiStateMachine.setWifiEnabled(true);
+                 mWifiStateMachine.setScanOnlyMode(
+@@ -1380,7 +1389,7 @@ public class WifiService extends IWifiManager.Stub {
+             // Be aggressive about adding new locks into the accounted state...
+             // we want to over-report rather than under-report.
+             reportStartWorkSource();
+-
++			Slog.d(TAG, "update $$$ 4");
+             updateWifiState();
+             return true;
+         } catch (RemoteException e) {
+@@ -1451,6 +1460,7 @@ public class WifiService extends IWifiManager.Stub {
+             }
+ 
+             // TODO - should this only happen if you hadLock?
++            Slog.d(TAG, "update $$$ 5");
+             updateWifiState();
+ 
+         } catch (RemoteException e) {

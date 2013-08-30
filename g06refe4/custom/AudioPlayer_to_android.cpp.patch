@@ -1,0 +1,20 @@
+diff --git a/wilhelm/src/android/AudioPlayer_to_android.cpp b/wilhelm/src/android/AudioPlayer_to_android.cpp
+old mode 100644
+new mode 100755
+index 8f60ead..1c7d1c7
+--- a/wilhelm/src/android/AudioPlayer_to_android.cpp
++++ b/wilhelm/src/android/AudioPlayer_to_android.cpp
+@@ -1140,7 +1140,12 @@ static void audioTrack_callBack_pullFromBuffQueue(int event, void* user, void *i
+ 
+             // declared as void * because this code supports both 8-bit and 16-bit PCM data
+             void *pSrc = (char *)oldFront->mBuffer + ap->mBufferQueue.mSizeConsumed;
+-            if (ap->mBufferQueue.mSizeConsumed + pBuff->size < oldFront->mSize) {
++            /**
++             *  change < to <=, when size equal mSize, the data should be consumed
++             *  Changed by AMLogic
++             *
++             */
++            if (ap->mBufferQueue.mSizeConsumed + pBuff->size <= oldFront->mSize) {
+                 // can't consume the whole or rest of the buffer in one shot
+                 ap->mBufferQueue.mSizeConsumed += pBuff->size;
+                 // leave pBuff->size untouched

@@ -1,0 +1,11 @@
+diff --git a/res/values-zh-rTW/strings.xml b/res/values-zh-rTW/strings.xml
+index 3deff85..f07e569 100755
+--- a/res/values-zh-rTW/strings.xml
++++ b/res/values-zh-rTW/strings.xml
+@@ -1646,4 +1646,6 @@
+     <string name="setting_internal_sd_card">"内部 SD 卡"</string>
+     <string name="setting_external_sd_card">"外部 SD 卡"</string>        
+     <string name="setting_usb">"USB 存儲器"</string>  
++    <!--status bar hide enable checkbox-->
++    <string name="sb_hide_title">"全屏幕"</string>
+ </resources>

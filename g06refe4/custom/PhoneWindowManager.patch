@@ -1,0 +1,13 @@
+diff --git a/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java b/policy/src/com/android/internal/policy/impl/PhoneWindowM
+index e4b9357..53a36d5 100755
+--- a/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
++++ b/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
+@@ -3501,7 +3501,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+         synchronized (mLock) {
+             int sensorRotation = mOrientationListener.getProposedRotation(); // may be -1
+             if (sensorRotation < 0) {
+-                sensorRotation = lastRotation;
++                sensorRotation = 1;  //sensorRotation = lastRotation;
+             }
+
+             final int preferredRotation;

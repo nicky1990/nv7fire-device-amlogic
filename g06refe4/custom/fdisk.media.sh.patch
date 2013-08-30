@@ -1,0 +1,10 @@
+diff --git a/common/recovery/fdisk.media.sh b/common/recovery/fdisk.media.sh
+index f6c56c9..b0a7ce4 100755
+--- a/common/recovery/fdisk.media.sh
++++ b/common/recovery/fdisk.media.sh
+@@ -2,3 +2,6 @@
+ 
+ #/sbin/busybox fdisk /dev/block/avnftl7 < /etc/fdisk.media.cmd
+ /sbin/busybox fdisk /dev/block/avnftl* < /etc/fdisk.media.cmd
++/sbin/busybox mount -t vfat /dev/block/avnftli1 /media
+\ No newline at end of file

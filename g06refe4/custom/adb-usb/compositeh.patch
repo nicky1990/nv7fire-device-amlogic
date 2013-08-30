@@ -1,0 +1,23 @@
+diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
+old mode 100644
+new mode 100755
+index 66a29a9..090a06f
+--- a/include/linux/usb/composite.h
++++ b/include/linux/usb/composite.h
+@@ -36,6 +36,7 @@
+ 
+ #include <linux/usb/ch9.h>
+ #include <linux/usb/gadget.h>
++#include <linux/wakelock.h>
+ 
+ /*
+  * USB function drivers should return USB_GADGET_DELAYED_STATUS if they
+@@ -361,6 +362,8 @@ struct usb_composite_dev {
+ 
+ 	/* protects deactivations and delayed_status counts*/
+ 	spinlock_t			lock;
++	int is_lock;
++	struct wake_lock wake_lock;
+ };
+ 
+ extern int usb_string_id(struct usb_composite_dev *c);

@@ -1,0 +1,255 @@
+diff --git a/sound/soc/aml/aml_m6_wm8960.c b/sound/soc/aml/aml_m6_wm8960.c
+old mode 100755
+new mode 100644
+index fb02d39..d0e1d39
+--- a/sound/soc/aml/aml_m6_wm8960.c
++++ b/sound/soc/aml/aml_m6_wm8960.c
+@@ -43,6 +43,7 @@ struct wm8960_private_data {
+ #if HP_DET
+     int timer_en;
+     int detect_flag;
++    int wait_flag;
+     struct timer_list timer;
+     struct work_struct work;
+     struct mutex lock;
+@@ -96,12 +97,16 @@ static void wm8960_start_timer(unsigned long delay)
+     wm8960_snd_priv->detect_flag = -1;
+     add_timer(&wm8960_snd_priv->timer);
+     wm8960_snd_priv->timer_en = 1;
++    wm8960_snd_priv->wait_flag = 0;
+ }
+ 
+ static void wm8960_stop_timer(void)
+ {
+     del_timer_sync(&wm8960_snd_priv->timer);
+-    cancel_work_sync(&wm8960_snd_priv->work);
++    if (wm8960_snd_priv->wait_flag) {
++        wm8960_snd_priv->wait_flag = 0;
++        cancel_work_sync(&wm8960_snd_priv->work);
++    }
+     wm8960_snd_priv->timer_en = 0;
+     wm8960_snd_priv->detect_flag = -1;
+ }
+@@ -110,48 +115,89 @@ static void wm8960_work_func(struct work_struct *work)
+ {
+     struct wm8960_private_data *pdata = NULL;
+     struct snd_soc_codec *codec = NULL;
++    struct snd_soc_dapm_context *dapm = NULL;
+     int flag = -1;
+-	int status = SND_JACK_HEADPHONE;
++    int status = SND_JACK_HEADPHONE;
+ 
+     pdata = container_of(work, struct wm8960_private_data, work);
+     codec = (struct snd_soc_codec *)pdata->data;
++    dapm = &codec->dapm;
++
++    if (pdata == NULL || pdata->wait_flag == 0)
++        return;
+ 
+     flag = wm8960_detect_hp();
+     if(pdata->detect_flag != flag) {
+         if (flag == 1) {
+             printk(KERN_INFO "wm8960 hp pluged\n");
+ 
+-            /* Speaker */
+-            snd_soc_update_bits(codec, WM8960_LOUT2, 0x7f, 0);
+-            snd_soc_update_bits(codec, WM8960_ROUT2, 0x7f, 0);
+-            /* Headphone */
++            if (wm8960_snd_pdata->speaker != WM8960_SPK_MONOMIX) {
++                /* Speaker Volume */
++                snd_soc_update_bits(codec, WM8960_LOUT2, 0x7f, 0);
++                snd_soc_update_bits(codec, WM8960_ROUT2, 0x7f, 0);
++
++                /* Speaker PGA */
++                snd_soc_update_bits(codec, WM8960_POWER2, (1 << 4) | (1 << 3), 0);
++            } else {
++                /* OUT3 */
++                snd_soc_update_bits(codec, WM8960_POWER2, 1 << 1, 0);
++            }
++
++            /* Headphone Volume */
+             snd_soc_update_bits(codec, WM8960_LOUT1, 0x7f, 0x7f);
+             snd_soc_update_bits(codec, WM8960_ROUT1, 0x7f, 0x7f);
+ 
+             /* DAC Mono Mix clear */
+             snd_soc_update_bits(codec, WM8960_ADDCTL1, 1 << 4, 0);
+ 
+-            /* jack report */
++            /* Jack Report */
+             snd_soc_jack_report(&pdata->jack, status, SND_JACK_HEADPHONE);
+         } else {
+             printk(KERN_INFO "wm8960 hp unpluged\n");
+ 
+-            /* Speaker */
+-            snd_soc_update_bits(codec, WM8960_LOUT2, 0x7f, 0x7f);
+-            snd_soc_update_bits(codec, WM8960_ROUT2, 0x7f, 0x7f);
+-            /* Headphone */
++            if (wm8960_snd_pdata->speaker != WM8960_SPK_MONOMIX) {
++                unsigned int value = 0;
++                unsigned int  mask = (1 << 4) | (1 << 3);
++
++                if (wm8960_snd_pdata->speaker == WM8960_SPK_LEFT) {
++                    value = (1 << 4);
++                } else if (wm8960_snd_pdata->speaker == WM8960_SPK_RIGHT) {
++                    value = (1 << 3);
++                } else {
++                    value = mask;
++                }
++
++                /* Speaker PGA */
++                snd_soc_update_bits(codec, WM8960_POWER2, mask, value);
++
++                /* Speaker Volume */
++                if ((wm8960_snd_pdata->speaker == WM8960_SPK_LEFT) || (wm8960_snd_pdata->speaker == WM8960_SPK_STEREO))
++                    snd_soc_update_bits(codec, WM8960_LOUT2, 0x7f, 0x7f);
++
++                if ((wm8960_snd_pdata->speaker == WM8960_SPK_RIGHT) || (wm8960_snd_pdata->speaker == WM8960_SPK_STEREO))
++                    snd_soc_update_bits(codec, WM8960_ROUT2, 0x7f, 0x7f);
++            } else {
++                /* OUT3 */
++                snd_soc_update_bits(codec, WM8960_POWER2, 1 << 1, 1 << 1);
++            }
++
++            /* Headphone Volume */
+             snd_soc_update_bits(codec, WM8960_LOUT1, 0x7f, 0);
+             snd_soc_update_bits(codec, WM8960_ROUT1, 0x7f, 0);
+ 
+             /* DAC Mono Mix set */
+-            snd_soc_update_bits(codec, WM8960_ADDCTL1, 1 << 4, 1 << 4);
++            if (wm8960_snd_pdata->speaker != WM8960_SPK_STEREO && wm8960_snd_pdata->speaker != WM8960_SPK_MONOMIX) {
++                snd_soc_update_bits(codec, WM8960_ADDCTL1, 1 << 4, 1 << 4);
++            }
+ 
+-            /* jack report */
++            /* Jack Report */
+             snd_soc_jack_report(&pdata->jack, 0, SND_JACK_HEADPHONE);
+         }
+ 
+         pdata->detect_flag = flag;
+     }
++
++    pdata->wait_flag = 0;
+ }
+ 
+ 
+@@ -160,7 +206,10 @@ static void wm8960_timer_func(unsigned long data)
+     struct wm8960_private_data *pdata = (struct wm8960_private_data *)data;
+     unsigned long delay = msecs_to_jiffies(200);
+ 
+-    schedule_work(&pdata->work);
++    if (pdata->wait_flag == 0) {
++        pdata->wait_flag = 1;
++        schedule_work(&pdata->work);
++    }
+     mod_timer(&pdata->timer, jiffies + delay);
+ }
+ #endif
+@@ -198,7 +247,7 @@ static int wm8960_hw_params(struct snd_pcm_substream *substream,
+ 
+     /* set cpu DAI configuration */
+     ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S |
+-        SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBM_CFM);
++        SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
+     if (ret < 0) {
+         printk(KERN_ERR "%s: set cpu dai fmt failed!\n", __func__);
+         return ret;
+@@ -316,10 +365,28 @@ static const struct snd_soc_dapm_widget wm8960_dapm_widgets[] = {
+     SND_SOC_DAPM_MIC("Mic", NULL),
+ };
+ 
+-static const struct snd_soc_dapm_route wm8960_dapm_intercon[] = {
++static const struct snd_soc_dapm_route wm8960_dapm_spk_l[] = {
++    {"Ext Spk", NULL, "SPK_LP"},
++    {"Ext Spk", NULL, "SPK_LN"},
++};
++
++static const struct snd_soc_dapm_route wm8960_dapm_spk_r[] = {
++    {"Ext Spk", NULL, "SPK_RP"},
++    {"Ext Spk", NULL, "SPK_RN"},
++};
++
++static const struct snd_soc_dapm_route wm8960_dapm_spk_lr[] = {
+     {"Ext Spk", NULL, "SPK_LP"},
+     {"Ext Spk", NULL, "SPK_LN"},
++    {"Ext Spk", NULL, "SPK_RP"},
++    {"Ext Spk", NULL, "SPK_RN"},
++};
++
++static const struct snd_soc_dapm_route wm8960_dapm_spk_out3[] = {
++    {"Ext Spk", NULL, "OUT3"},
++};
+ 
++static const struct snd_soc_dapm_route wm8960_dapm_intercon[] = {
+     {"HP", NULL, "HP_L"},
+     {"HP", NULL, "HP_R"},
+ 
+@@ -347,24 +414,63 @@ static int wm8960_codec_init(struct snd_soc_pcm_runtime *rtd)
+ 
+     printk(KERN_DEBUG "enter %s wm8960_snd_pdata: %p\n", __func__, wm8960_snd_pdata);
+ 
++    /* set ADCLRC/GPIO1 Pin Function Select */
++    snd_soc_update_bits(codec, WM8960_IFACE2, (1 << 6), (1 << 6));
++
+     /* Add specific widgets */
+     snd_soc_dapm_new_controls(dapm, wm8960_dapm_widgets,
+                   ARRAY_SIZE(wm8960_dapm_widgets));
+     /* Set up specific audio path interconnects */
+     snd_soc_dapm_add_routes(dapm, wm8960_dapm_intercon, ARRAY_SIZE(wm8960_dapm_intercon));
+ 
+-    /* set ADCLRC/GPIO1 Pin Function Select */
+-    snd_soc_update_bits(codec, WM8960_IFACE2, (1 << 6), (1 << 6));
++    switch (wm8960_snd_pdata->speaker)
++    {
++        case WM8960_SPK_LEFT:
++            snd_soc_dapm_add_routes(dapm, wm8960_dapm_spk_l, ARRAY_SIZE(wm8960_dapm_spk_l));
++            break;
++        case WM8960_SPK_RIGHT:
++            snd_soc_dapm_add_routes(dapm, wm8960_dapm_spk_r, ARRAY_SIZE(wm8960_dapm_spk_r));
++            break;
++        case WM8960_SPK_MONOMIX:
++            snd_soc_dapm_add_routes(dapm, wm8960_dapm_spk_out3, ARRAY_SIZE(wm8960_dapm_spk_out3));
++            break;
++        case WM8960_SPK_STEREO:
++        default:
++            snd_soc_dapm_add_routes(dapm, wm8960_dapm_spk_lr, ARRAY_SIZE(wm8960_dapm_spk_lr));
++            break;
++    }
+ 
+     /* not connected */
+     snd_soc_dapm_nc_pin(dapm, "LINPUT3");
+     snd_soc_dapm_nc_pin(dapm, "RINPUT3");
+     snd_soc_dapm_nc_pin(dapm, "RINPUT2");
+     snd_soc_dapm_nc_pin(dapm, "RINPUT1");
+-    
+-    snd_soc_dapm_nc_pin(dapm, "OUT3");
+-    snd_soc_dapm_nc_pin(dapm, "SPK_RP");
+-    snd_soc_dapm_nc_pin(dapm, "SPK_RN");
++
++    switch (wm8960_snd_pdata->speaker)
++    {
++        case WM8960_SPK_LEFT:
++            snd_soc_dapm_nc_pin(dapm, "OUT3");
++            snd_soc_dapm_nc_pin(dapm, "SPK_RP");
++            snd_soc_dapm_nc_pin(dapm, "SPK_RN");
++            break;
++        case WM8960_SPK_RIGHT:
++            snd_soc_dapm_nc_pin(dapm, "OUT3");
++            snd_soc_dapm_nc_pin(dapm, "SPK_LP");
++            snd_soc_dapm_nc_pin(dapm, "SPK_LN");
++            break;
++        case WM8960_SPK_MONOMIX:
++            snd_soc_dapm_nc_pin(dapm, "SPK_LP");
++            snd_soc_dapm_nc_pin(dapm, "SPK_LN");
++            snd_soc_dapm_nc_pin(dapm, "SPK_RP");
++            snd_soc_dapm_nc_pin(dapm, "SPK_RN");
++            /* Mono Output Mixer Volume 0: 0db 1: -6db  default -6db */
++            snd_soc_update_bits(codec, WM8960_MONO, (1 << 6), 0);
++            break;
++        case WM8960_SPK_STEREO:
++        default:
++            snd_soc_dapm_nc_pin(dapm, "OUT3");
++            break;
++    }
+ 
+     /* always connected */
+     snd_soc_dapm_enable_pin(dapm, "Ext Spk");

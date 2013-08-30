@@ -1,0 +1,60 @@
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index c261c09..da47e25 100755
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -290,7 +290,7 @@
+ #include <linux/string.h>
+ #include <linux/freezer.h>
+ #include <linux/utsname.h>
+-#include <linux/wakelock.h>
++//#include <linux/wakelock.h>
+ 
+ #include <linux/usb/ch9.h>
+ #include <linux/usb/gadget.h>
+@@ -1629,7 +1629,7 @@ static int send_status(struct fsg_common *common)
+ 	while (bh->state != BUF_STATE_EMPTY) {
+ 		rc = sleep_thread(common);
+ 		if (rc)
+-			return rc;
++			return rc;		
+ 	}
+ 
+ 	if (curlun) {
+@@ -1662,9 +1662,10 @@ static int send_status(struct fsg_common *common)
+ 
+ 	bh->inreq->length = USB_BULK_CS_WRAP_LEN;
+ 	bh->inreq->zero = 0;
+-	if (!start_in_transfer(common, bh))
++	if (!start_in_transfer(common, bh)){
+ 		/* Don't know what to do if common->fsg is NULL */
+ 		return -EIO;
++	}
+ 
+ 	common->next_buffhd_to_fill = bh->next;
+ 	return 0;
+@@ -2623,7 +2624,6 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+ 	common->ep0 = gadget->ep0;
+ 	common->ep0req = cdev->req;
+ 	common->cdev = cdev;
+-	gadget->priv_data = &common->is_lock;
+ 
+ 	/* Maybe allocate device-global string IDs, and patch descriptors */
+ 	if (fsg_strings[FSG_STRING_INTERFACE].id == 0) {
+@@ -2647,9 +2647,6 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+ 
+ 	init_rwsem(&common->filesem);
+ 
+-	wake_lock_init(&common->wake_lock, WAKE_LOCK_SUSPEND,
+-			   "usb_mass_storage");
+-
+ 	for (i = 0, lcfg = cfg->luns; i < nluns; ++i, ++curlun, ++lcfg) {
+ 		curlun->cdrom = !!lcfg->cdrom;
+ 		curlun->ro = lcfg->cdrom || lcfg->ro;
+@@ -2791,7 +2788,6 @@ buffhds_first_it:
+ 
+ error_luns:
+ 	common->nluns = i + 1;
+-	wake_lock_destroy(&common->wake_lock);
+ error_release:
+ 	common->state = FSG_STATE_TERMINATED;	/* The thread is dead */
+ 	/* Call fsg_common_release() directly, ref might be not initialised. */

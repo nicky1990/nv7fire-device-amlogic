@@ -1,0 +1,17 @@
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index 39bbd62..a19413a 100755
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -542,10 +542,8 @@ static void adjust_wake_lock(struct fsg_common *common)
+ 	}
+ 	//printk("common->fsg? %d ums_active/lock? %d\n", common->fsg != NULL, ums_active);
+ 
+-	if (ums_active)
+-		wake_lock(&common->wake_lock);
+-	else
+-		wake_unlock(&common->wake_lock);
++	if(ums_active ^ common->is_lock)
++		adjust_gadget_wake_lock(&common->cdev->wake_lock,ums_active);
+ 
+ 	common->is_lock = ums_active;
+ 

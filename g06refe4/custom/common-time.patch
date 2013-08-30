@@ -1,0 +1,72 @@
+diff --git a/arch/arm/mach-meson6/time.c b/arch/arm/mach-meson6/time.c
+old mode 100644
+new mode 100755
+index 87e8ce1..d8df94c
+--- a/arch/arm/mach-meson6/time.c
++++ b/arch/arm/mach-meson6/time.c
+@@ -58,8 +58,13 @@ static struct clocksource clocksource_timer_e = {
+     .flags  = CLOCK_SOURCE_IS_CONTINUOUS,
+ };
+ 
+-#if CONFIG_HAVE_SCHED_CLOCK
+-
++static struct clocksource clocksource_timer_f = {
++    .name   = "Timer-F",
++    .rating = 300,
++    .read   = cycle_read_timerE,
++    .mask   = CLOCKSOURCE_MASK(32),
++    .flags  = CLOCK_SOURCE_IS_CONTINUOUS,
++};
+ static DEFINE_CLOCK_DATA(cd);
+ /*
+  * sched_clock()
+@@ -92,46 +97,15 @@ static void __init meson_clocksource_init(void)
+      */
+     clocksource_timer_e.shift = 22;
+     clocksource_timer_e.mult = 4194304000u;
++    clocksource_timer_f.shift = clocksource_timer_e.shift;
++	clocksource_timer_f.mult = ((clocksource_timer_e.mult)>>6)*64;
+     clocksource_register(&clocksource_timer_e);
+-
++	clocksource_register(&clocksource_timer_f);
+     init_fixed_sched_clock(&cd, meson6_update_sched_clock, 32,
+                            USEC_PER_SEC,
+                            clocksource_timer_e.mult,
+                            clocksource_timer_e.shift);
+ }
+-#else
+-static void __init meson_clocksource_init(void)
+- {
+-     aml_clr_reg32_mask(P_ISA_TIMER_MUX, TIMER_E_INPUT_MASK);
+-     aml_set_reg32_mask(P_ISA_TIMER_MUX, TIMERE_UNIT_1us << TIMER_E_INPUT_BIT);
+- ///    aml_write_reg32(P_ISA_TIMERE, 0);
+-
+-       /**
+-        * (counter*mult)>>shift=xxx ns
+-        */
+-    clocksource_timer_e.shift = 0;
+-    clocksource_timer_e.mult = 1000;
+-
+-     clocksource_register(&clocksource_timer_e);
+-}
+-
+-/*
+- * sched_clock()
+- */
+-unsigned long long sched_clock(void)
+-{
+-    static unsigned long last_timeE=0;
+-    static cycle_t cyc=0;
+-    struct clocksource *cs = &clocksource_timer_e;
+-    unsigned long cur;
+-    cur=cycle_read_timerE(NULL);
+-    cyc += cur - last_timeE;
+-    last_timeE=cur;
+-    return clocksource_cyc2ns(cyc, cs->mult, cs->shift);
+-
+- }
+-
+-#endif
+ /********** Clock Event Device, Timer-ABCD *********/
+ #define MESON_TIMERA 0
+ #define MESON_TIMERB 1

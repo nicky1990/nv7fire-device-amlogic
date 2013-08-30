@@ -1,0 +1,273 @@
+diff --git a/cmds/bootanimation/BootAnimation.cpp b/cmds/bootanimation/BootAnimation.cpp
+index ed0974f..8955676 100755
+--- a/cmds/bootanimation/BootAnimation.cpp
++++ b/cmds/bootanimation/BootAnimation.cpp
+@@ -59,7 +59,8 @@
+ #define USER_BOOTANIMATION_FILE "/data/local/bootanimation.zip"
+ #define SYSTEM_BOOTANIMATION_FILE "/system/media/bootanimation.zip"
+ #define SYSTEM_ENCRYPTED_BOOTANIMATION_FILE "/system/media/bootanimation-encrypted.zip"
+-
++//gadmei
++#define close_OSD1_logo_path "/sys/class/graphics/fb1/blank"
+ namespace android {
+ 
+ // ---------------------------------------------------------------------------
+@@ -336,7 +337,7 @@ bool BootAnimation::threadLoop()
+     if (mAndroidAnimation) {
+         r = android();
+     } else {
+-        r = movie();
++        r = gademei_movie();//gadmei
+     }
+ 
+     eglMakeCurrent(mDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+@@ -587,7 +588,249 @@ bool BootAnimation::movie()
+ 
+     return false;
+ }
++//gadmei +
++void BootAnimation::close_OSD1_logo(void)
++{    
++	FILE* fp = fopen(close_OSD1_logo_path,"w+");	char* content="1";
++	if(fp == NULL)
++	{	    fclose(fp);
++		return;
++	}
++	if(EOF == fputc(* content,fp))
++	;
++	fclose(fp);
++    return;
++}
++
++bool BootAnimation::gademei_movie()
++{
++    ZipFileRO& zip(mZip);
++
++    size_t numEntries = zip.getNumEntries();
++    ZipEntryRO desc = zip.findEntryByName("desc.txt");
++    FileMap* descMap = zip.createEntryFileMap(desc);
++    LOGE_IF(!descMap, "descMap is null");
++    if (!descMap) {
++        return false;
++    }
++
++    String8 desString((char const*)descMap->getDataPtr(),
++            descMap->getDataLength());
++    char const* s = desString.string();
++
++    Animation animation;
++
++    // Parse the description file
++    for (;;) {
++        const char* endl = strstr(s, "\n");
++        if (!endl) break;
++        String8 line(s, endl - s);
++        const char* l = line.string();
++        int fps, width, height, count, pause;
++        char path[256];
++        if (sscanf(l, "%d %d %d", &width, &height, &fps) == 3) {
++            //LOGD("> w=%d, h=%d, fps=%d", fps, width, height);
++            animation.width = width;
++            animation.height = height;
++            animation.fps = fps;
++        }
++        if (sscanf(l, "p %d %d %s", &count, &pause, path) == 3) {
++            //LOGD("> count=%d, pause=%d, path=%s", count, pause, path);
++            Animation::Part part;
++            part.count = count;
++            part.pause = pause;
++            part.path = path;
++            animation.parts.add(part);
++        }
++        s = ++endl;
++    }
++
++    // read all the data structures
++    const size_t pcount = animation.parts.size();
++    for (size_t i=0 ; i<numEntries ; i++) {
++        char name[256];
++        ZipEntryRO entry = zip.findEntryByIndex(i);
++        if (zip.getEntryFileName(entry, name, 256) == 0) {
++            const String8 entryName(name);
++            const String8 path(entryName.getPathDir());
++            const String8 leaf(entryName.getPathLeaf());
++            if (leaf.size() > 0) {
++                for (int j=0 ; j<pcount ; j++) {
++                    if (path == animation.parts[j].path) {
++                        int method;
++                        // supports only stored png files
++                        if (zip.getEntryInfo(entry, &method, 0, 0, 0, 0, 0)) {
++                            if (method == ZipFileRO::kCompressStored) {
++                                FileMap* map = zip.createEntryFileMap(entry);
++                                if (map) {
++                                    Animation::Frame frame;
++                                    frame.name = leaf;
++                                    frame.map = map;
++                                    Animation::Part& part(animation.parts.editItemAt(j));
++                                    part.frames.add(frame);
++                                }
++                            }
++                        }
++                    }
++                }
++            }
++        }
++    }
+ 
++    // clear screen
++    glShadeModel(GL_FLAT);
++    glDisable(GL_DITHER);
++    glDisable(GL_SCISSOR_TEST);
++    glDisable(GL_BLEND);
++	glClearColor(0,0,0,1);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    eglSwapBuffers(mDisplay, mSurface);
++
++    glBindTexture(GL_TEXTURE_2D, 0);
++    glEnable(GL_TEXTURE_2D);
++    glTexEnvx(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
++    glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
++    glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
++    glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
++    glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++
++    const int xc = (mWidth - animation.width) / 2;
++    const int yc = ((mHeight - animation.height) / 2);
++    nsecs_t lastFrame = systemTime();
++    nsecs_t frameDuration = s2ns(1) / animation.fps;
++
++    Region clearReg(Rect(mWidth, mHeight));
++    clearReg.subtractSelf(Rect(xc, yc, xc+animation.width, yc+animation.height));
++		
++    for (int i=0 ; i<1 && !exitPending() ; i++) {
++        const Animation::Part& part(animation.parts[i]);
++        const size_t fcount = part.frames.size();
++        
++            for (int j=0 ; j<fcount && !exitPending(); j++) {
++                const Animation::Frame& frame(part.frames[j]);
++
++                        glGenTextures(1, &frame.tid);
++                        glBindTexture(GL_TEXTURE_2D, frame.tid);
++                        glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
++                        glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++                    LOGD("initTexture frame.tid = %d",frame.tid);
++                    initTexture(
++                            frame.map->getDataPtr(),
++                            frame.map->getDataLength());								
++                if (j == 0) {
++                    if (!clearReg.isEmpty()) {
++                        Region::const_iterator head(clearReg.begin());
++                        Region::const_iterator tail(clearReg.end());
++                        glEnable(GL_SCISSOR_TEST);
++                        while (head != tail) {
++                            const Rect& r(*head++);
++                            glScissor(r.left, mHeight - r.bottom,
++                                    r.width(), r.height());
++                            glClear(GL_COLOR_BUFFER_BIT);
++                        }
++                        glDisable(GL_SCISSOR_TEST);
++                    }
++                    glDrawTexiOES(xc, yc, 0, animation.width, animation.height);
++                    eglSwapBuffers(mDisplay, mSurface);
++                    glBindTexture(GL_TEXTURE_2D, frame.tid);
++                }
++            }
++
++    	}
++        
++   // close_OSD1_logo();
++		
++    for (int i=0 ; i<1 && !exitPending() ; i++) {
++        const Animation::Part& part(animation.parts[i]);
++        const size_t fcount = part.frames.size();
++        //glBindTexture(GL_TEXTURE_2D, 0);
++
++        for (int r=0; !part.count || r<2000; r++) {
++			
++		int j=0;	
++			
++		if(r==0)
++		  	j = 0;
++		else
++			j = 2;
++		
++            for (; j<fcount && !exitPending(); j++) {
++						  
++                const Animation::Frame& frame(part.frames[j]);
++
++                //if (r > 0) {
++                    glBindTexture(GL_TEXTURE_2D, frame.tid);
++                //} else {
++                //    if (part.count != 1) {
++               //         glGenTextures(1, &frame.tid);
++               //         glBindTexture(GL_TEXTURE_2D, frame.tid);
++               //         glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
++               //         glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++               //     }
++
++
++		//if(flag)	{  
++               //     initTexture(
++              //              frame.map->getDataPtr(),
++              //              frame.map->getDataLength());
++								
++				//if((i==1) && (r == 0) && (j== fcount-1)){
++				//	flag = false;					
++				//	LOGD("flag = false");	
++				//	goto draw;			
++				//}
++				
++		//		if(xxx)
++		//		{
++		//			xxx=0;
++					
++		//		}				
++		//		else
++		//		{
++		//		continue;
++		//			}
++
++               //}
++               // }
++
++                if (!clearReg.isEmpty()) {
++                    Region::const_iterator head(clearReg.begin());
++                    Region::const_iterator tail(clearReg.end());
++                    glEnable(GL_SCISSOR_TEST);
++                    while (head != tail) {
++                        const Rect& r(*head++);
++                        glScissor(r.left, mHeight - r.bottom,
++                                r.width(), r.height());
++                        glClear(GL_COLOR_BUFFER_BIT);
++                    }
++                    glDisable(GL_SCISSOR_TEST);
++                }
++                glDrawTexiOES(xc, yc, 0, animation.width, animation.height);
++                eglSwapBuffers(mDisplay, mSurface);
++
++                nsecs_t now = systemTime();
++                nsecs_t delay = frameDuration - (now - lastFrame);
++                lastFrame = now;
++                long wait = ns2us(frameDuration);
++                if (wait > 0)
++                    usleep(wait);
++            }
++            usleep(part.pause * ns2us(frameDuration));
++        }
++
++        // free the textures for this part
++        // (part.count != 1) {
++            for (int j=0 ; j<fcount ; j++) {
++                const Animation::Frame& frame(part.frames[j]);
++                glDeleteTextures(1, &frame.tid);
++            }
++        //}
++    }
++
++    return false;
++}
++//gadmei -
+ // ---------------------------------------------------------------------------
+ 
+ }

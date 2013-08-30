@@ -1,0 +1,12 @@
+diff --git a/etc/init.rc b/etc/init.rc
+index ce6f804..796bbd2 100755
+--- a/etc/init.rc
++++ b/etc/init.rc
+@@ -22,6 +22,7 @@ on init
+     mkdir /system
+     mkdir /data
+     mkdir /cache
++    mkdir /media
+     mount /tmp /tmp tmpfs
+ 
+ on boot

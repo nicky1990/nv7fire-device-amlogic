@@ -1,0 +1,13 @@
+diff --git a/arch/arm/mach-meson6/clock.c b/arch/arm/mach-meson6/clock.c
+index 4cf5f2c..b3b097a 100755
+--- a/arch/arm/mach-meson6/clock.c
++++ b/arch/arm/mach-meson6/clock.c
+@@ -894,7 +894,7 @@ static int _clk_set_rate_cpu(struct clk *clk, unsigned long cpu, unsigned long g
+ 
+ 	clk->rate = cpu; 
+  
+-	pr_info("(CTS_CPU_CLK) CPU %ld.%ldMHz\n",  clk_get_rate_a9(clk) / 1000000,clk_get_rate_a9(clk)%1000000);
++	//pr_info("(CTS_CPU_CLK) CPU %ld.%ldMHz\n",  clk_get_rate_a9(clk) / 1000000,clk_get_rate_a9(clk)%1000000);
+ 	return 0;
+ }
+ 

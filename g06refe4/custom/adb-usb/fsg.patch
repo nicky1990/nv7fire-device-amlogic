@@ -1,0 +1,13 @@
+diff --git a/drivers/usb/gadget/fsg.h b/drivers/usb/gadget/fsg.h
+index dd4a67b..eb50584 100755
+--- a/drivers/usb/gadget/fsg.h
++++ b/drivers/usb/gadget/fsg.h
+@@ -128,7 +128,7 @@ struct fsg_common {
+ 	 */
+ 	char inquiry_string[8 + 16 + 4 + 1];
+ 
+-	struct wake_lock wake_lock;
++//	struct wake_lock wake_lock;
+ 	int is_lock;
+ 
+ 	struct kref		ref;

@@ -1,0 +1,12 @@
+diff --git a/include/media/amlogic/flashlight.h b/include/media/amlogic/flashlight.h
+index c5365f1..7cb6c72 100755
+--- a/include/media/amlogic/flashlight.h
++++ b/include/media/amlogic/flashlight.h
+@@ -20,6 +20,7 @@ typedef enum {
+ 	FLASHLIGHT_ON,
+ 	FLASHLIGHT_OFF,
+ 	FLASHLIGHT_TORCH,
++	FLASHLIGHT_RED_EYE,
+ }aml_plat_flashlight_status_t;
+ 
+ #endif

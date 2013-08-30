@@ -1,0 +1,23 @@
+diff --git a/include/sound/wm8960.h b/include/sound/wm8960.h
+index 2f48300..21ae37c 100644
+--- a/include/sound/wm8960.h
++++ b/include/sound/wm8960.h
+@@ -15,10 +15,17 @@
+ #define WM8960_DRES_150R 3
+ #define WM8960_DRES_MAX  3
+ 
++#define WM8960_SPK_STEREO   0
++#define WM8960_SPK_LEFT     1
++#define WM8960_SPK_RIGHT    2
++#define WM8960_SPK_MONOMIX  3
++
+ struct wm8960_data {
+ 	bool capless;  /* Headphone outputs configured in capless mode */
+ 
+-	int dres;  /* Discharge resistance for headphone outputs */
++    int dres;  /* Discharge resistance for headphone outputs */
++
++    int speaker; /* Speaker output mode */
+ 
+     int (*hp_detect)(void);
+     void (*device_init)(void);

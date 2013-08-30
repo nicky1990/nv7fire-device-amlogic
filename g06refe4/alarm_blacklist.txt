@@ -1,0 +1,9 @@
+com.google.android.gsf:replace
+com.google.android.location:replace
+com.google.android.apps.maps:replace
+com.google.android.partnersetup:replace
+cn.etouch.ecalendar:replace
+com.cbox.cphone:replace
+com.devuni.flashlight:replace
+com.ainol.pad.gfan:replace
+com.android.phone:replace

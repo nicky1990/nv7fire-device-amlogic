@@ -1,0 +1,26 @@
+diff --git a/inc/V4LCameraAdapter/V4LCameraAdapter.h b/inc/V4LCameraAdapter/V4LCameraAdapter.h
+index ec50342..40db239 100755
+--- a/inc/V4LCameraAdapter/V4LCameraAdapter.h
++++ b/inc/V4LCameraAdapter/V4LCameraAdapter.h
+@@ -327,6 +327,8 @@ private:
+ 
+ #ifdef AMLOGIC_USB_CAMERA_SUPPORT
+     int mUsbCameraStatus;
++    
++    bool mIsDequeuedEIOError;
+ 
+     enum UsbCameraStatus
+     {
+@@ -338,7 +340,12 @@ private:
+     //int maxQueueable;//the max queued buffers in v4l
+ 
+     camera_focus_mode_t cur_focus_mode;	
++    camera_focus_mode_t cur_focus_mode_for_conti;
++    bool mEnableContiFocus;
+ 
++    struct timeval ppm_last;
++    struct timeval ppm_now;
++    bool first_time;
+ };
+ }; //// namespace
+ #endif //V4L_CAMERA_ADAPTER_H

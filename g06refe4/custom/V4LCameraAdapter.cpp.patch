@@ -1,0 +1,28 @@
+diff --git a/V4LCameraAdapter/V4LCameraAdapter.cpp b/V4LCameraAdapter/V4LCameraAdapter.cpp
+index c227db5..c488c90 100755
+--- a/V4LCameraAdapter/V4LCameraAdapter.cpp
++++ b/V4LCameraAdapter/V4LCameraAdapter.cpp
+@@ -410,6 +410,8 @@ status_t V4LCameraAdapter::useBuffers(CameraMode mode, void* bufArr, int num, si
+             ret = UseBuffersPreview(bufArr, num);
+             //maxQueueable = queueable;
+             break;
++        default:
++            break;
+     }
+ 
+     LOG_FUNCTION_NAME_EXIT;
+@@ -708,6 +710,14 @@ int V4LCameraAdapter::beginAutoFocusThread(void *cookie)
+     ctl.id = V4L2_CID_FOCUS_AUTO;
+     ctl.value = CAM_FOCUS_MODE_AUTO;//c->cur_focus_mode;
+     ret = ioctl(c->mCameraHandle, VIDIOC_S_CTRL, &ctl);
++    for(int j=0; j<50; j++){
++	usleep(30000);//30*50ms=1.5s
++	ret = ioctl(c->mCameraHandle, VIDIOC_G_CTRL, &ctl);
++	if( (0==ret) ||
++	((ret < 0)&&(EBUSY != errno)) ){
++		break;
++	}
++    }
+ 
+     c->setState(CAMERA_CANCEL_AUTOFOCUS);
+     c->commitState();

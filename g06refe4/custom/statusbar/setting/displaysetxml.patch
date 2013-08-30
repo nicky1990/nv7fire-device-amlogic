@@ -1,0 +1,14 @@
+diff --git a/res/xml/display_settings.xml b/res/xml/display_settings.xml
+index bd167f7..795ba91 100755
+--- a/res/xml/display_settings.xml
++++ b/res/xml/display_settings.xml
+@@ -66,5 +66,9 @@
+             android:key="notification_pulse"
+             android:title="@string/notification_pulse_title"
+             android:persistent="false" />
++            
++        <CheckBoxPreference
++        android:key="statusbar_hide"
++        android:title="@string/sb_hide_title"/>
+         
+ </PreferenceScreen>

@@ -1,0 +1,309 @@
+diff --git a/drivers/amlogic/camera/common/plat_ctrl.c b/drivers/amlogic/camera/common/plat_ctrl.c
+index 8306b5e..88697cb 100755
+--- a/drivers/amlogic/camera/common/plat_ctrl.c
++++ b/drivers/amlogic/camera/common/plat_ctrl.c
+@@ -35,20 +35,20 @@
+ /****************************************************************
+  *   i2c functions
+  * **************************************************************/
+-static int camera_read_buff(struct i2c_client *client,char *buf, int len)
++static int camera_read_buff(struct i2c_client *client,char *buf, int addr_len, int data_len)
+ {
+     int  i2c_flag = -1;
+ 	struct i2c_msg msgs[] = {
+ 		{
+ 			.addr	= client->addr,
+ 			.flags	= 0,
+-			.len	= 1,
++			.len	= addr_len,
+ 			.buf	= buf,
+ 		},
+ 		{
+ 			.addr	= client->addr,
+ 			.flags	= I2C_M_RD,
+-			.len	= len,
++			.len	= data_len,
+ 			.buf	= buf,
+ 		}
+ 	};
+@@ -84,7 +84,7 @@ int i2c_get_byte(struct i2c_client *client,unsigned short addr)
+     buff[0] = (unsigned char)((addr >> 8) & 0xff);
+     buff[1] = (unsigned char)(addr & 0xff);
+        
+-	if (camera_read_buff(client, buff, 1) <0)
++	if (camera_read_buff(client, buff, 2, 1) <0)
+ 		return -1;
+ 	return buff[0];
+ }
+@@ -94,7 +94,7 @@ int i2c_get_byte_add8(struct i2c_client *client,unsigned short addr)
+ 	unsigned char buff[4];
+     buff[0] = (unsigned char)(addr & 0xff);
+        
+-	if (camera_read_buff(client, buff, 1) <0)
++	if (camera_read_buff(client, buff, 1, 1) <0)
+ 		return -1;
+ 	return buff[0];
+ }
+@@ -106,7 +106,7 @@ int i2c_get_word(struct i2c_client *client,unsigned short addr)
+     buff[0] = (unsigned char)((addr >> 8) & 0xff);
+     buff[1] = (unsigned char)(addr & 0xff);
+     
+-	if (camera_read_buff(client, buff, 2) <0)
++	if (camera_read_buff(client, buff, 2, 2) <0)
+ 		return -1;
+     else
+     {
+diff --git a/drivers/amlogic/camera/common/vm.c b/drivers/amlogic/camera/common/vm.c
+index 91c2b8c..ba03c24 100644
+--- a/drivers/amlogic/camera/common/vm.c
++++ b/drivers/amlogic/camera/common/vm.c
+@@ -50,6 +50,8 @@
+ /*class property info.*/
+ #include "vmcls.h"
+ 
++static int task_running = 0;
++
+ #ifdef CONFIG_ARCH_MESON6
+ #define GE2D_NV
+ #endif
+@@ -91,6 +93,24 @@ static inline void vm_vf_put_from_provider(vframe_t *vf);
+ #define VM_DEPTH_8_CANVAS_V 0x58
+ #define VM_DMA_CANVAS_INDEX 0x5e
+ #define VM_CANVAS_MX 0x5f
++static int vmdecbuf_size[] ={
++			0xE79C00,//5M
++			0x900000,//3M
++			0x591000,//2M
++			0x384000,//1M3
++			0x240000,//1M
++			0xE1000,//VGA
++			0x3C000,//QVGA
++			};
++static struct v4l2_frmsize_discrete canvas_config_wh[]={
++					{2592,1952},
++					{2048,1536},
++					{1600,1216},
++					{1280,960},
++					{1024,768},
++					{640,480},
++					{320,256},
++				    };
+ 
+ #define GE2D_ENDIAN_SHIFT        24
+ #define GE2D_ENDIAN_MASK            (0x1 << GE2D_ENDIAN_SHIFT)
+@@ -322,11 +342,11 @@ void vm_local_init(void)
+ static vframe_receiver_op_t* vf_vm_unreg_provider(void)
+ {
+ //    ulong flags;    
+-//    stop_vm_task();
++	vf_unreg_provider(&vm_vf_prov);
++    stop_vm_task();
+ //    spin_lock_irqsave(&lock, flags); 
+ //    vfp = NULL;
+ //    spin_unlock_irqrestore(&lock, flags);
+-    vf_unreg_provider(&vm_vf_prov);
+     return (vframe_receiver_op_t*)NULL;
+ }
+ EXPORT_SYMBOL(vf_vm_unreg_provider);
+@@ -337,13 +357,12 @@ static vframe_receiver_op_t* vf_vm_reg_provider( )
+ 
+     spin_lock_irqsave(&lock, flags);
+     spin_unlock_irqrestore(&lock, flags);
+-    
++    vm_buffer_init();
+     vf_reg_provider(&vm_vf_prov);
+     start_vm_task();   
+ #if 0   
+     start_simulate_task();
+-#endif    
+-    
++#endif        
+     return &vm_vf_receiver;
+ }
+ EXPORT_SYMBOL(vf_vm_reg_provider);
+@@ -578,6 +597,9 @@ int vm_fill_buffer(struct videobuf_buffer* vb , int v4l2_format , int magic,void
+ 		v4l2_format =  V4L2_PIX_FMT_YUV444 ; 
+ 		vb = &buf;
+ 	}
++	if(!task_running){
++		return ret;	
++	}
+ #endif
+ 	switch(magic){
+ 	case   MAGIC_DC_MEM:
+@@ -935,7 +957,8 @@ static int vm_task(void *data) {
+ 	int ret = 0;
+ 	vframe_t *vf;
+ 	int src_canvas;
+-	int timer_count = 0 ;
++	int timer_count = 0 ;
++struct sched_param param = {.sched_priority = MAX_RT_PRIO - 1 };
+ 	ge2d_context_t *context=create_ge2d_work_queue();
+ 	config_para_ex_t ge2d_config;
+ 	
+@@ -946,14 +969,25 @@ static int vm_task(void *data) {
+ #endif
+ 
+ 	memset(&ge2d_config,0,sizeof(config_para_ex_t));
+-	amlog_level(LOG_LEVEL_HIGH,"vm task is running\n ");
++	amlog_level(LOG_LEVEL_HIGH,"vm task is running\n ");
++    sched_setscheduler(current, SCHED_FIFO, &param);
++    allow_signal(SIGTERM);
+ 	while(1) {
+ 		ret = down_interruptible(&vb_start_sema);
+-		timer_count = 0;
++		timer_count = 0;
++        if (kthread_should_stop()){
++            up(&vb_done_sema);
++            break;
++        }
+ 
+ 		/* wait for frame from 656 provider until 500ms runs out */
+ 		vf = local_vf_peek();
+ 		while((vf == NULL) && (timer_count < 200)) {
++			if(!task_running){
++	            up(&vb_done_sema);
++	            goto vm_exit;
++	            break;					
++			}
+ 			vf = local_vf_peek();
+ 			timer_count++;
+ 			msleep(5);
+@@ -988,11 +1022,23 @@ static int vm_task(void *data) {
+ 					(end.tv_usec - start.tv_usec) / 1000;
+ 			printk("step 2, memcpy use: %ldms\n", time_use);
+ #endif 
+-		}
++		}
++        if (kthread_should_stop()){
++            up(&vb_done_sema);
++            break;
++        }	
+ 		up(&vb_done_sema); 
+ 	}
+-
+-	destroy_ge2d_work_queue(context);
++vm_exit:
++	destroy_ge2d_work_queue(context);
++    while(!kthread_should_stop()){
++	/* 	   may not call stop, wait..
++                   it is killed by SIGTERM,eixt on down_interruptible
++		   if not call stop,this thread may on do_exit and 
++		   kthread_stop may not work good;
++	*/
++	    msleep(10);
++    }
+ 	return ret;
+ }
+ 
+@@ -1029,9 +1075,19 @@ int vm_buffer_init(void)
+ 	if(!buf_start || !buf_size) 
+ 		goto exit;
+ 
+-	canvas_width = 1920;
+-	canvas_height = 1200;
+-	decbuf_size = 0x700000;
++	for(i=0; i<ARRAY_SIZE(vmdecbuf_size);i++){
++		if( buf_size >= vmdecbuf_size[i])
++			break;
++	}
++	if(i==ARRAY_SIZE(vmdecbuf_size)){
++		printk("vmbuf size=%d less than the smallest vmbuf size%d\n",
++			buf_size, vmdecbuf_size[i-1]);
++		return -1;
++	}
++
++	canvas_width = canvas_config_wh[i].width;//1920;
++	canvas_height = canvas_config_wh[i].height;//1200;
++	decbuf_size = vmdecbuf_size[i];//0x700000;
+ 	buf_num  = buf_size/decbuf_size;
+ 	
+ 	if(buf_num > 0)
+@@ -1085,7 +1141,8 @@ int start_vm_task(void) {
+ 			return -1;
+ 		}
+ 		wake_up_process(task);    
+-	}
++	}
++    task_running = 1;
+ 	return 0;
+ }
+ 
+@@ -1104,10 +1161,14 @@ int start_simulate_task(void)
+ 
+ 
+ void stop_vm_task(void) {
+-	if(task) 
+-		kthread_stop(task);
+-	task=NULL;
+-	vm_local_init();
++    if(task){
++        task_running = 0;
++        send_sig(SIGTERM, task, 1);
++        up(&vb_start_sema);
++        kthread_stop(task);
++        task = NULL;
++    }
++    vm_local_init();
+ }
+ 
+ 
+diff --git a/drivers/amlogic/display/ge2d/ge2d_hw.c b/drivers/amlogic/display/ge2d/ge2d_hw.c
+index 8e5f703..8dbe14b 100755
+--- a/drivers/amlogic/display/ge2d/ge2d_hw.c
++++ b/drivers/amlogic/display/ge2d/ge2d_hw.c
+@@ -591,7 +591,7 @@ int ge2d_cmd_fifo_full(void)
+ //####################################################################################################
+ void ge2d_set_cmd (ge2d_cmd_t *cfg)
+ {
+-    int widthi, heighti, tmp_widthi, tmp_heighti, widtho, heighto;
++    unsigned int widthi, heighti, tmp_widthi, tmp_heighti, widtho, heighto;
+     unsigned int multo;
+     unsigned x_extra_bit_start = 0, x_extra_bit_end = 0;
+     unsigned y_extra_bit_start = 0, y_extra_bit_end = 0;
+@@ -680,10 +680,10 @@ void ge2d_set_cmd (ge2d_cmd_t *cfg)
+     tmp_heighti = sc_prevsc_en ? ((heighti+1) >>1): heighti; 
+    
+     if (cfg->hsc_phase_step == 0)
+-       cfg->hsc_phase_step = ((tmp_widthi << 20) / widtho) <<4;
++       cfg->hsc_phase_step = ((tmp_widthi << 18) / widtho) <<6;//width no more than 8192
+ 
+     if (cfg->vsc_phase_step == 0)
+-       cfg->vsc_phase_step = ((tmp_heighti << 20) / heighto) << 4;   
++       cfg->vsc_phase_step = ((tmp_heighti << 18) / heighto) << 6;//height no more than 8192
+        
+     if ((cfg->sc_hsc_en) && (cfg->hsc_div_en)) {
+         cfg->hsc_div_length = (124 << 24) / cfg->hsc_phase_step;
+diff --git a/drivers/amlogic/tvin_camera/bt656_601_in.c b/drivers/amlogic/tvin_camera/bt656_601_in.c
+index 95c3ade..31209eb 100755
+--- a/drivers/amlogic/tvin_camera/bt656_601_in.c
++++ b/drivers/amlogic/tvin_camera/bt656_601_in.c
+@@ -48,6 +48,8 @@
+ #define DEVICE_NAME "amvdec_656in"
+ #define MODULE_NAME "amvdec_656in"
+ #define BT656IN_IRQ_NAME "amvdec_656in-irq"
++#define CANVAS_SIZE_6_500M (2592*2*1952*6 + BT656IN_ANCI_DATA_SIZE)
++#define CANVAS_SIZE_6_300M (2048*2*1536*6 + BT656IN_ANCI_DATA_SIZE)
+ 
+ //#define HANDLE_BT656IN_IRQ
+ 
+@@ -268,6 +270,19 @@ static int bt656_camera_in_canvas_init(unsigned int mem_start, unsigned int mem_
+     unsigned decbuf_start = mem_start + BT656IN_ANCI_DATA_SIZE;
+     am656in_dec_info.decbuf_size   = 0x400000;
+ 
++    //pr_dbg("mem_size=%ld, 500Msize=%ld,300M=%ld\n", 
++		//mem_size, CANVAS_SIZE_6_500M, CANVAS_SIZE_6_300M);
++    if( mem_size >= CANVAS_SIZE_6_500M){
++	canvas_width  = 2592 << 1;
++	canvas_height = 1952;
++	am656in_dec_info.decbuf_size   = canvas_width*canvas_height + 0x1000;
++	pr_dbg("5M canvas config\n");
++    }else if( mem_size >= CANVAS_SIZE_6_300M ){
++	canvas_width  = 2048 << 1;
++	canvas_height = 1536;
++	am656in_dec_info.decbuf_size   = canvas_width*canvas_height + 0x1000;
++	pr_dbg("3M canvas config\n");
++    }
+     i = (unsigned)((mem_size - BT656IN_ANCI_DATA_SIZE) / am656in_dec_info.decbuf_size);
+ 
+     am656in_dec_info.canvas_total_count = (BT656IN_VF_POOL_SIZE > i)? i : BT656IN_VF_POOL_SIZE;

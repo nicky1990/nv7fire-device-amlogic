@@ -1,0 +1,25 @@
+diff --git a/sound/soc/aml/aml_m6_rt5631.c b/sound/soc/aml/aml_m6_rt5631.c
+index ce3ce25..3d43b6f 100755
+--- a/sound/soc/aml/aml_m6_rt5631.c
++++ b/sound/soc/aml/aml_m6_rt5631.c
+@@ -354,8 +354,10 @@ static const struct snd_soc_dapm_widget rt5631_dapm_widgets[] = {
+ };
+ 
+ static const struct snd_soc_dapm_route rt5631_dapm_intercon[] = {
+-    {"Ext Spk", NULL, "SPOL"},
+-    {"Ext Spk", NULL, "SPOR"},
++    //{"Ext Spk", NULL, "SPOL"},
++    //{"Ext Spk", NULL, "SPOR"},
++    {"Ext Spk", NULL, "AUXO1"},
++   	{"Ext Spk",NULL, "AUXO2"},
+ 
+     {"HP", NULL, "HPOL"},
+     {"HP", NULL, "HPOR"},
+@@ -383,6 +385,7 @@ static int rt5631_codec_init(struct snd_soc_pcm_runtime *rtd)
+     snd_soc_dapm_new_controls(dapm, rt5631_dapm_widgets,
+                   ARRAY_SIZE(rt5631_dapm_widgets));
+     /* Set up specific audio path interconnects */
++	printk("******rt5631_codec_init****wcs*********\n");
+     snd_soc_dapm_add_routes(dapm, rt5631_dapm_intercon, ARRAY_SIZE(rt5631_dapm_intercon));
+ 
+     /* Setup spk/hp/mono output */

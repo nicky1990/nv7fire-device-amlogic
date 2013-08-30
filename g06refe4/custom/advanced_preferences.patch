@@ -1,0 +1,13 @@
+diff --git a/res/xml/advanced_preferences.xml b/res/xml/advanced_preferences.xml
+index b48399c..f2307f3 100644
+--- a/res/xml/advanced_preferences.xml
++++ b/res/xml/advanced_preferences.xml
+@@ -30,7 +30,7 @@
+         android:title="@string/pref_development_uastring"
+         android:entries="@array/pref_development_ua_choices"
+         android:entryValues="@array/pref_development_ua_values"
+-        android:defaultValue="3"/>
++        android:defaultValue="0"/>
+         
+     <CheckBoxPreference
+             android:key="open_in_background"

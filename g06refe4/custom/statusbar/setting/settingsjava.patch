@@ -1,0 +1,15 @@
+diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
+index e18302e..03a6b1f 100755
+--- a/core/java/android/provider/Settings.java
++++ b/core/java/android/provider/Settings.java
+@@ -1145,6 +1145,10 @@ public final class Settings {
+          * CPU settings.
+          */
+         public static final String CPU_MODE = "cpu_mode";
++	  /**
++	   *FYLL SCREEN settings
++	   */
++		public static final String STATUSBAR_HIDE_ENABLE="statusbar_hide";
+ 
+         /**
+          * Whether we keep the device on while the device is plugged in.

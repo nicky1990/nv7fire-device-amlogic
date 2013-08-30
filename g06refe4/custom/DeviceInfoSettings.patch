@@ -1,0 +1,16 @@
+diff --git a/src/com/android/settings/DeviceInfoSettings.java b/src/com/android/settings/DeviceInfoSettings.java
+index c25a466..87a2fe4 100644
+--- a/src/com/android/settings/DeviceInfoSettings.java
++++ b/src/com/android/settings/DeviceInfoSettings.java
+@@ -80,9 +80,9 @@ public class DeviceInfoSettings extends SettingsPreferenceFragment {
+                 PROPERTY_URL_SAFETYLEGAL);
+ 
+         // Remove Baseband version if wifi-only device
+-        if (Utils.isWifiOnly(getActivity())) {
++        //if (Utils.isWifiOnly(getActivity())) {
+             getPreferenceScreen().removePreference(findPreference(KEY_BASEBAND_VERSION));
+-        }
++        //}
+ 
+         /*
+          * Settings is a generic app and should not contain any device-specific

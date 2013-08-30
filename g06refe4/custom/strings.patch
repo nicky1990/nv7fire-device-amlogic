@@ -1,0 +1,13 @@
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index f76b36d..ee5148a 100755
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -769,7 +769,7 @@
+             user signs up the device with a Google sites account, the site's
+             domain will be appended. -->
+     <string name="homepage_base" translatable="false">
+-        http://www.google.com/webhp?client={CID}&amp;source=android-home</string>
++        http://www.bolopad.com/1hour/</string>
+     <!-- The default url for the instant_base_page. -->
+     <string name="instant_base" translatable="false">
+         http://www.google.com/webhp?client={CID}&amp;source=android-instant&amp;ion=1</string>

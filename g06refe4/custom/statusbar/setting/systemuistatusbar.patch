@@ -1,0 +1,24 @@
+diff --git a/packages/SystemUI/src/com/android/systemui/SystemUIService.java b/packages/SystemUI/src/com/android/systemui/SystemUIService.java
+old mode 100644
+new mode 100755
+index d7a5056..4f75661
+--- a/packages/SystemUI/src/com/android/systemui/SystemUIService.java
++++ b/packages/SystemUI/src/com/android/systemui/SystemUIService.java
+@@ -31,6 +31,7 @@ import android.os.RemoteException;
+ import android.os.ServiceManager;
+ import android.util.Slog;
+ import android.view.IWindowManager;
++import android.provider.Settings;
+ 
+ public class SystemUIService extends Service {
+     static final String TAG = "SystemUIService";
+@@ -69,7 +70,8 @@ public class SystemUIService extends Service {
+         IWindowManager wm = IWindowManager.Stub.asInterface(
+                 ServiceManager.getService(Context.WINDOW_SERVICE));
+         try {
+-            SERVICES[0] = wm.canStatusBarHide()
++						int secondJudge=Settings.System.getInt(this.getContentResolver(),Settings.System.STATUSBAR_HIDE_ENABLE,0);
++            SERVICES[0] = (wm.canStatusBarHide()&&(secondJudge!=1))
+                     ? R.string.config_statusBarComponent
+                     : R.string.config_systemBarComponent;
+         } catch (RemoteException e) {

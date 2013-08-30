@@ -1,0 +1,14 @@
+diff --git a/cmds/bootanimation/BootAnimation.h b/cmds/bootanimation/BootAnimation.h
+index 641d641..e28fdfc 100755
+--- a/cmds/bootanimation/BootAnimation.h
++++ b/cmds/bootanimation/BootAnimation.h
+@@ -88,6 +88,9 @@ private:
+     status_t initTexture(void* buffer, size_t len);
+     bool android();
+     bool movie();
++	//gadmei
++    void close_OSD1_logo();
++    bool gademei_movie();
+ 
+     sp<SurfaceComposerClient>       mSession;
+     AssetManager mAssets;

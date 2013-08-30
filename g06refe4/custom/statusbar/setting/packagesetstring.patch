@@ -1,0 +1,11 @@
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 111edae..0849bc6 100755
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -3939,4 +3939,6 @@ found in the list of installed apps.</string>
+     <string name="setting_internal_sd_card">Internal SD Card</string>
+     <string name="setting_external_sd_card">External SD Card</string>    
+     <string name="setting_usb">USB storage</string>
++    <!--status bar hide enable checkbox-->
++    <string name="sb_hide_title">"Full Screen"</string>
+ </resources>

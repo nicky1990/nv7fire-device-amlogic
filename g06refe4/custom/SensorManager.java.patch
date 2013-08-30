@@ -1,0 +1,13 @@
+diff --git a/core/java/android/hardware/SensorManager.java b/core/java/android/hardware/SensorManager.java
+index b6d3f58..6f8fd1b 100755
+--- a/core/java/android/hardware/SensorManager.java
++++ b/core/java/android/hardware/SensorManager.java
+@@ -1143,7 +1143,7 @@ public class SensorManager
+                 delay = 0;
+                 break;
+             case SENSOR_DELAY_GAME:
+-                delay = 20000;
++                delay = 0;
+                 break;
+             case SENSOR_DELAY_UI:
+                 delay = 66667;

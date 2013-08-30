@@ -1,0 +1,64 @@
+diff --git a/src/com/android/gallery3d/app/MovieActivity.java b/src/com/android/gallery3d/app/MovieActivity.java
+old mode 100644
+new mode 100755
+index 099e9f5..c1fe69d
+--- a/src/com/android/gallery3d/app/MovieActivity.java
++++ b/src/com/android/gallery3d/app/MovieActivity.java
+@@ -34,6 +34,11 @@ import android.view.Window;
+ import android.view.WindowManager;
+ import android.widget.ShareActionProvider;
+ 
++import android.content.Context;
++import android.content.IntentFilter;
++import android.view.WindowManagerPolicy;
++import android.content.BroadcastReceiver;
++
+ import com.android.gallery3d.R;
+ 
+ /**
+@@ -46,6 +51,8 @@ public class MovieActivity extends Activity {
+     private MoviePlayer mPlayer;
+     private boolean mFinishOnCompletion;
+     private Uri mUri;
++    
++    private boolean mHdmiPlugged;
+ 
+     @Override
+     public void onCreate(Bundle savedInstanceState) {
+@@ -152,14 +159,36 @@ public class MovieActivity extends Activity {
+     public void onPause() {
+         mPlayer.onPause();
+         super.onPause();
++        
++        unregisterReceiver(mHdmiPluggedReceiver);         
+     }
+ 
+     @Override
+     public void onResume() {
+         mPlayer.onResume();
+         super.onResume();
++        
++        IntentFilter filter = new IntentFilter();
++        filter.addAction(WindowManagerPolicy.ACTION_HDMI_PLUGGED);
++        Intent intent = registerReceiver(mHdmiPluggedReceiver, filter);
++        if (intent != null) {
++            // Retrieve current sticky dock event broadcast.
++            mHdmiPlugged = intent.getBooleanExtra(WindowManagerPolicy.EXTRA_HDMI_PLUGGED_STATE, false);
++        } 
++                
+     }
+ 
++    private BroadcastReceiver mHdmiPluggedReceiver = new BroadcastReceiver() {
++        public void onReceive(Context context, Intent intent) {        	
++            boolean plugged
++                = intent.getBooleanExtra(WindowManagerPolicy.EXTRA_HDMI_PLUGGED_STATE, false);
++
++            if (mHdmiPlugged != plugged) {     
++                MovieActivity.this.finish();  
++            }        
++        }
++    };
++
+     @Override
+     public void onSaveInstanceState(Bundle outState) {
+         super.onSaveInstanceState(outState);

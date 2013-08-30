@@ -1,0 +1,23 @@
+diff --git a/include/media/amlogic/aml_camera.h b/include/media/amlogic/aml_camera.h
+index 8b8949c..130cf0c 100755
+--- a/include/media/amlogic/aml_camera.h
++++ b/include/media/amlogic/aml_camera.h
+@@ -10,6 +10,7 @@
+  *******************************************************************/
+ #ifndef __AML_VIDEO_CAMERA_INCLUDE_9908049_
+ #define __AML_VIDEO_CAMERA_INCLUDE_9908049_
++#include "flashlight.h"
+ typedef void(*video_cam_init_fun_t)(void);
+ typedef void(*video_cam_uninit_fun_t)(void);
+ typedef void(*video_cam_early_suspend_fun_t)(void);
+@@ -43,8 +44,10 @@ typedef struct {
+ 	void* custom_init_script;
+ 	unsigned pri_dat;
+ 	unsigned flash_support;
++	aml_plat_flashlight_data_t* flash_ctrl;
+ 	
+ }aml_plat_cam_data_t;
+ 
+  
+ #endif /* __AML_VIDEO_CAMERA_INCLUDE_9908049_ */
++

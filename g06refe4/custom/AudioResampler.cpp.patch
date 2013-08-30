@@ -1,0 +1,31 @@
+diff --git a/services/audioflinger/AudioResampler.cpp b/services/audioflinger/AudioResampler.cpp
+index 225b711..fe5c32e 100755
+--- a/services/audioflinger/AudioResampler.cpp
++++ b/services/audioflinger/AudioResampler.cpp
+@@ -260,7 +260,12 @@ void AudioResamplerOrder1::resampleStereo16(int32_t* out, size_t outFrameCount,
+             // LOG_ASSERT(mBuffer.frameCount == 0);
+         }
+     }
+-
++	/* release the audio track buffer to let audio track have more space to write data */
++	if(inputIndex > 0){
++		mBuffer.frameCount = inputIndex;
++		provider->releaseBuffer(&mBuffer);
++		inputIndex = 0;
++	}
+     // LOGE("output buffer full - outputIndex=%d, inputIndex=%d\n", outputIndex, inputIndex);
+ 
+ resampleStereo16_exit:
+@@ -354,6 +359,12 @@ void AudioResamplerOrder1::resampleMono16(int32_t* out, size_t outFrameCount,
+             // LOG_ASSERT(mBuffer.frameCount == 0);
+         }
+     }
++	/* release the audio track buffer to let audio track have more space to write data */
++	if(inputIndex > 0){
++		mBuffer.frameCount = inputIndex;
++		provider->releaseBuffer(&mBuffer);
++		inputIndex = 0;
++	}
+ 
+     // LOGE("output buffer full - outputIndex=%d, inputIndex=%d\n", outputIndex, inputIndex);
+ 

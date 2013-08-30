@@ -1,0 +1,12 @@
+diff --git a/src/com/android/launcher2/IconCache.java b/src/com/android/launcher2/IconCache.java
+index 2430a6b..46c10e9 100644
+--- a/src/com/android/launcher2/IconCache.java
++++ b/src/com/android/launcher2/IconCache.java
+@@ -66,6 +66,7 @@ public class IconCache {
+         } else {
+             mIconDpi = context.getResources().getDisplayMetrics().densityDpi;
+         }
++        mIconDpi = 240;
+         // need to set mIconDpi before getting default icon
+         mDefaultIcon = makeDefaultIcon();
+     }

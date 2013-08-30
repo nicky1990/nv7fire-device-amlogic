@@ -1,0 +1,76 @@
+diff --git a/src/com/android/settings/DisplaySettings.java b/src/com/android/settings/DisplaySettings.java
+index a19076e..0890744 100755
+--- a/src/com/android/settings/DisplaySettings.java
++++ b/src/com/android/settings/DisplaySettings.java
+@@ -61,7 +61,8 @@ public class DisplaySettings extends SettingsPreferenceFragment implements
+     private int sel_index;
+ 	private int index_entry;
+ 	private static final int GET_USER_OPERATION=1;
+-
++	private static final String KEY_Hide_StatusBar = "statusbar_hide";
++	private CheckBoxPreference mHideStatusBar;
+     /** If there is no setting in the provider, use this. */
+     private static final int FALLBACK_SCREEN_TIMEOUT_VALUE = 30000;
+ 
+@@ -189,6 +190,7 @@ public class DisplaySettings extends SettingsPreferenceFragment implements
+             }
+         }
+ 
++	      mHideStatusBar = (CheckBoxPreference)findPreference(KEY_Hide_StatusBar);
+         if(!Utils.platformHasScreenBrightness()){
+         	getPreferenceScreen().removePreference(findPreference(KEY_Brightness));
+         }
+@@ -338,7 +340,10 @@ public class DisplaySettings extends SettingsPreferenceFragment implements
+     @Override
+     public void onResume() {
+         super.onResume();
+-
++				if(mHideStatusBar!=null){
++					int mSbVal= Settings.System.getInt(getContentResolver(), Settings.System.STATUSBAR_HIDE_ENABLE,0);
++					mHideStatusBar.setChecked((mSbVal==1)? true:false);
++					}
+         updateState();
+         getContentResolver().registerContentObserver(
+                 Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION), true,
+@@ -406,7 +411,12 @@ public class DisplaySettings extends SettingsPreferenceFragment implements
+ 			intent.putExtras(bundle);
+ 			startActivity(intent);
+ 			DisplaySettings.this.finish();
+-        }
++			}else if(preference==mHideStatusBar){
++			Settings.System.putInt(getActivity().getContentResolver(), Settings.System.STATUSBAR_HIDE_ENABLE,
++				mHideStatusBar.isChecked()? 1:0);
++			refresh();
++			return true;
++			}
+         return super.onPreferenceTreeClick(preferenceScreen, preference);
+     }
+ 
+@@ -438,7 +448,13 @@ public class DisplaySettings extends SettingsPreferenceFragment implements
+                 Log.e(TAG, "could not persist output mode setting", e);
+             }
+         }
+-
++		if (KEY_Hide_StatusBar.equals(key)){
++				Boolean  mStatus=objValue.toString().equals("true");
++				Settings.System.putInt(getActivity().getContentResolver(), Settings.System.STATUSBAR_HIDE_ENABLE,
++                                     mStatus? 1:0);					
++					refresh();
++	     	return true;
++			  }
+         return true;
+     }
+ 	
+@@ -730,4 +746,12 @@ public class DisplaySettings extends SettingsPreferenceFragment implements
+         }
+ 		return 4;  //set 720p as default
+     }
++     private void refresh()
++{
++   		 try {
++             ActivityManagerNative.getDefault().updateConfiguration(mCurConfig);
++        } catch (RemoteException e) {
++            Log.w(TAG, "Unable to full screen");
++        }
++    }
+ }

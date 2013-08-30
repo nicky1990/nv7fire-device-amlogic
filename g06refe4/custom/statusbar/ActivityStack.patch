@@ -1,0 +1,38 @@
+diff --git a/services/java/com/android/server/am/ActivityStack.java b/services/java/com/android/server/am/ActivityStack.java
+index 4c8fd13..a09b08a 100755
+--- a/services/java/com/android/server/am/ActivityStack.java
++++ b/services/java/com/android/server/am/ActivityStack.java
+@@ -45,6 +45,7 @@ import android.content.Intent;
+ import android.content.IntentSender;
+ import android.content.pm.ActivityInfo;
+ import android.content.pm.ApplicationInfo;
++import android.content.pm.PackageInfo;
+ import android.content.pm.PackageManager;
+ import android.content.pm.ResolveInfo;
+ import android.content.res.Configuration;
+@@ -1124,7 +1125,24 @@ final class ActivityStack {
+         
+         if (SystemProperties.getBoolean("ro.app.optimization", false)) {
+             nativeOptimization(next);
+-        }        
++        }
++        
++        if (next != null) {
++            try {
++                PackageInfo info = AppGlobals.getPackageManager().getPackageInfo(next.packageName, 0);
++                boolean isSystemApp = info == null ||
++                        (info.applicationInfo.flags & (ApplicationInfo.FLAG_SYSTEM |
++                                       ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
++                if (!isSystemApp)
++                    SystemProperties.set("vplayer.hideStatusBar.enable", "true");
++                else
++                    SystemProperties.set("vplayer.hideStatusBar.enable", "false");
++                    
++                //Log.w(TAG, "APP !!!!!!check: " + next.packageName + " isSystemApp=" + isSystemApp);
++            } catch (RemoteException e) {
++                Log.e(TAG, "Error getting package info: " + next.packageName, e);
++            }                
++        }      
+     }
+ 
+     /**

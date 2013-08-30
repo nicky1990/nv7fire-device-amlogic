@@ -1,0 +1,29 @@
+diff --git a/services/sensorservice/SensorDevice.cpp b/services/sensorservice/SensorDevice.cpp
+index a434cd7..7575ebd 100755
+--- a/services/sensorservice/SensorDevice.cpp
++++ b/services/sensorservice/SensorDevice.cpp
+@@ -27,13 +27,11 @@
+ #include <binder/IServiceManager.h>
+ 
+ #include <hardware/sensors.h>
+-#include <hardware_legacy/power.h>
+ 
+ #include "SensorDevice.h"
+ #include "SensorService.h"
+ 
+ namespace android {
+-#define SENSOR_WAKE_LOCK_NAME  "SensorService"
+ // ---------------------------------------------------------------------------
+ class BatteryService : public Singleton<BatteryService> {
+     static const int TRANSACTION_noteStartSensor = IBinder::FIRST_CALL_TRANSACTION + 3;
+@@ -210,10 +208,7 @@ status_t SensorDevice::activate(void* ident, int handle, int enabled)
+         if (idx >= 0) {
+             if (info.rates.size() == 0) {
+                 actuateHardware = true;
+-			release_wake_lock(SENSOR_WAKE_LOCK_NAME);
+             }
+-		else
+-			acquire_wake_lock(PARTIAL_WAKE_LOCK, SENSOR_WAKE_LOCK_NAME);
+         } else {
+             // sensor wasn't enabled for this ident
+         }

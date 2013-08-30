@@ -1,0 +1,14 @@
+diff --git a/src/com/android/browser/BrowserSettings.java b/src/com/android/browser/BrowserSettings.java
+index d56ba60..88f1929 100644
+--- a/src/com/android/browser/BrowserSettings.java
++++ b/src/com/android/browser/BrowserSettings.java
+@@ -697,7 +697,7 @@ public class BrowserSettings implements OnSharedPreferenceChangeListener,
+         //if (!isDebugEnabled()) {
+         //    return 0;
+         //}
+-        return Integer.parseInt(mPrefs.getString(PREF_USER_AGENT, "3"));
++        return Integer.parseInt(mPrefs.getString(PREF_USER_AGENT, "0"));
+     }
+ 
+     // -----------------------------
+

@@ -1,0 +1,424 @@
+diff --git a/drivers/amlogic/camera/ov5640.c b/drivers/amlogic/camera/ov5640.c
+index 4d2367b..a0467ad 100755
+--- a/drivers/amlogic/camera/ov5640.c
++++ b/drivers/amlogic/camera/ov5640.c
+@@ -49,11 +49,7 @@
+ #endif
+ #define OV5640_CAMERA_MODULE_NAME "ov5640"
+ 
+-#ifdef CONFIG_VIDEO_AMLOGIC_FLASHLIGHT
+ #include <media/amlogic/flashlight.h>
+-extern aml_plat_flashlight_status_t get_flashlightflag(void);
+-extern int set_flashlight(bool mode);
+-#endif
+ 
+ /* Wake up at about 30 fps */
+ #define WAKE_NUMERATOR 30
+@@ -192,6 +188,15 @@ static struct v4l2_queryctrl ov5640_qctrl[] = {
+         .step          = 0x1,
+         .default_value = CAM_FOCUS_MODE_CONTI_PIC,
+         .flags         = V4L2_CTRL_FLAG_SLIDER,
++    },{
++        .id            = V4L2_CID_BACKLIGHT_COMPENSATION,
++        .type          = V4L2_CTRL_TYPE_MENU,
++        .name          = "flash",
++        .minimum       = FLASHLIGHT_ON,
++        .maximum       = FLASHLIGHT_TORCH,
++        .step          = 0x1,
++        .default_value = FLASHLIGHT_OFF,
++        .flags         = V4L2_CTRL_FLAG_SLIDER,
+     }
+ };
+ 
+@@ -219,6 +224,25 @@ struct v4l2_querymenu ov5640_qmenu_autofocus[] = {
+     }
+ };
+ 
++struct v4l2_querymenu ov5640_qmenu_flashmode[] = {
++    {
++        .id         = V4L2_CID_BACKLIGHT_COMPENSATION,
++        .index      = FLASHLIGHT_ON,
++        .name       = "on",
++        .reserved   = 0,
++    },{
++        .id         = V4L2_CID_BACKLIGHT_COMPENSATION,
++        .index      = FLASHLIGHT_OFF,
++        .name       = "off",
++        .reserved   = 0,
++    },{
++        .id         = V4L2_CID_BACKLIGHT_COMPENSATION,
++        .index      = FLASHLIGHT_TORCH,
++        .name       = "torch",
++        .reserved   = 0,
++    }
++};
++
+ typedef struct {
+     __u32   id;
+     int     num;
+@@ -230,6 +254,10 @@ ov5640_qmenu_set_t ov5640_qmenu_set[] = {
+         .id             = V4L2_CID_FOCUS_AUTO,
+         .num            = ARRAY_SIZE(ov5640_qmenu_autofocus),
+         .ov5640_qmenu   = ov5640_qmenu_autofocus,
++    }, {
++        .id             = V4L2_CID_BACKLIGHT_COMPENSATION,
++        .num            = ARRAY_SIZE(ov5640_qmenu_flashmode),
++        .ov5640_qmenu   = ov5640_qmenu_flashmode,
+     }
+ };
+ 
+@@ -506,6 +534,7 @@ static struct aml_camera_i2c_fig_s OV5640_script[] = {
+ 	{0x3824, 0x02},//
+ 	{0x5000, 0xa7},//
+ 	{0x5001, 0xa3},//
++	/*
+ 	{0x5180, 0xff},  //AWB
+ 	{0x5181, 0xf2},
+ 	{0x5182, 0x00},
+@@ -537,6 +566,39 @@ static struct aml_camera_i2c_fig_s OV5640_script[] = {
+ 	{0x519c, 0x04},
+ 	{0x519d, 0x87},
+ 	{0x519e, 0x38},
++	*/
++	{0x5180, 0xff},  //AWB
++	{0x5181, 0xf2},
++	{0x5182, 0x00},
++	{0x5183, 0x14},
++	{0x5184, 0x25},
++	{0x5185, 0x24},
++	{0x5186, 0x09},
++	{0x5187, 0x09},
++	{0x5188, 0x16},
++	{0x5189, 0x8e},
++	{0x518a, 0x56},
++	{0x518b, 0xe0},
++	{0x518c, 0xb2},
++	{0x518d, 0x28},
++	{0x518e, 0x1d},
++	{0x518f, 0x56},
++	{0x5190, 0x46},
++	{0x5191, 0xf8},
++	{0x5192, 0x04},
++	{0x5193, 0x70},
++	{0x5194, 0xf0},
++	{0x5195, 0xf0},
++	{0x5196, 0x03},
++	{0x5197, 0x01},
++	{0x5198, 0x05},
++	{0x5199, 0x7c},
++	{0x519a, 0x04},
++	{0x519b, 0x00},
++	{0x519c, 0x06},
++	{0x519d, 0x79},
++	{0x519e, 0x38},
++	/*
+ 	{0x5381, 0x1e},  //color
+ 	{0x5382, 0x5b},
+ 	{0x5383, 0x08},
+@@ -548,6 +610,19 @@ static struct aml_camera_i2c_fig_s OV5640_script[] = {
+ 	{0x5389, 0x10},
+ 	{0x538a, 0x01},
+ 	{0x538b, 0x98},
++	*/
++	{0x5381, 0x1e},  //color
++	{0x5382, 0x5b},
++	{0x5383, 0x08},
++	{0x5384, 0x05},
++	{0x5385, 0x72},
++	{0x5386, 0x77},
++	{0x5387, 0x6d},
++	{0x5388, 0x4d},
++	{0x5389, 0x20},
++	{0x538a, 0x01},
++	{0x538b, 0x98},
++	
+ 	{0x5300, 0x08},  //sharpness/Denoise
+ 	{0x5301, 0x30},
+ 	{0x5302, 0x10},
+@@ -560,6 +635,7 @@ static struct aml_camera_i2c_fig_s OV5640_script[] = {
+ 	{0x530a, 0x30},
+ 	{0x530b, 0x04},
+ 	{0x530c, 0x06},
++	/*
+ 	{0x5480, 0x01}, //gamma
+ 	{0x5481, 0x08},
+ 	{0x5482, 0x14},
+@@ -577,6 +653,27 @@ static struct aml_camera_i2c_fig_s OV5640_script[] = {
+ 	{0x548e, 0xdd},
+ 	{0x548f, 0xea},
+ 	{0x5490, 0x1d},
++	*/
++	{0x5480, 0x01}, //gamma
++	{0x5481, 0x06},
++	{0x5482, 0x0e},
++	{0x5483, 0x19},
++	{0x5484, 0x3b},
++	{0x5485, 0x50},
++	{0x5486, 0x5d},
++	{0x5487, 0x6a},
++	{0x5488, 0x75},
++	{0x5489, 0x80},
++	{0x548a, 0x8a},
++	{0x548b, 0x9b},
++	{0x548c, 0xaa},
++	{0x548d, 0xc0},
++	{0x548e, 0xd5},
++	{0x548f, 0xe8},
++	{0x5490, 0x20},
++	
++	
++	
+ 	{0x5580, 0x04}, //UV
+     {0x5587, 0x05},
+ 	{0x5588, 0x09},
+@@ -585,6 +682,8 @@ static struct aml_camera_i2c_fig_s OV5640_script[] = {
+ 	{0x5589, 0x10},
+ 	{0x558a, 0x00},
+ 	{0x558b, 0xf8},
++	
++	/*
+ 	{0x5800, 0x3D}, //lens shading
+ 	{0x5801, 0x1F},
+ 	{0x5802, 0x17},
+@@ -647,14 +746,86 @@ static struct aml_camera_i2c_fig_s OV5640_script[] = {
+ 	{0x583B, 0x36},
+ 	{0x583C, 0x37},
+ 	{0x583D, 0xCE},
++	*/
++	{0x5800, 0x17}, //lens shading
++	{0x5801, 0x10},
++	{0x5802, 0x0e},
++	{0x5803, 0x0e},
++	{0x5804, 0x11},
++	{0x5805, 0x1b},
++	{0x5806, 0x0b},
++	{0x5807, 0x07},
++	{0x5808, 0x05},
++	{0x5809, 0x06},
++	{0x580A, 0x09},
++	{0x580B, 0x0e},
++	{0x580C, 0x06},
++	{0x580D, 0x02},
++	{0x580E, 0x00},
++	{0x580F, 0x00},
++	{0x5810, 0x03},
++	{0x5811, 0x09},
++	{0x5812, 0x06},
++	{0x5813, 0x03},
++	{0x5814, 0x00},
++	{0x5815, 0x00},
++	{0x5816, 0x03},
++	{0x5817, 0x09},
++	{0x5818, 0x0b},
++	{0x5819, 0x08},
++	{0x581A, 0x05},
++	{0x581B, 0x05},
++	{0x581C, 0x08},
++	{0x581D, 0x0e},
++	{0x581E, 0x18},
++	{0x581F, 0x12},
++	{0x5820, 0x0f},
++	{0x5821, 0x0f},
++	{0x5822, 0x12},
++	{0x5823, 0x1a},
++	{0x5824, 0x0a},
++	{0x5825, 0x0a},
++	{0x5826, 0x0a},
++	{0x5827, 0x0a},
++	{0x5828, 0x46},
++	{0x5829, 0x2a},
++	{0x582A, 0x24},
++	{0x582B, 0x44},
++	{0x582C, 0x24},
++	{0x582D, 0x28},
++	{0x582E, 0x08},
++	{0x582F, 0x42},
++	{0x5830, 0x40},
++	{0x5831, 0x42},
++	{0x5832, 0x28},
++	{0x5833, 0x0a},
++	{0x5834, 0x26},
++	{0x5835, 0x24},
++	{0x5836, 0x26},
++	{0x5837, 0x28},
++	{0x5838, 0x4a},
++	{0x5839, 0x0a},
++	{0x583A, 0x0c},
++	{0x583B, 0x2a},
++	{0x583C, 0x28},
++	{0x583D, 0xCE},
++	
+ 	{0x5025, 0x00},
+-	{0x3a0f, 0x30}, //EV
+-	{0x3a10, 0x28},
+-	{0x3a1b, 0x30},
+-	{0x3a1e, 0x26},
+-	{0x3a11, 0x60},
++	{0x3a0f, 0x40}, //EV
++	{0x3a10, 0x38},
++	{0x3a1b, 0x40},
++	{0x3a1e, 0x38},
++	{0x3a11, 0x70},
+ 	{0x3a1f, 0x14},
+ 	{0x3008, 0x02},
++	//contrast
++	/*
++	{0x5001, 0xff},
++	{0x5580, 0x04},
++	{0x5586, 0x10},
++	{0x5585, 0x10},
++	{0x5588, 0x41},
++	*/
+ 	{0xffff, 0xff}
+ };
+ 
+@@ -1015,6 +1186,9 @@ int OV5640_download_firmware(struct ov5640_device *dev)
+     return 0;
+ }
+ 
++static camera_focus_mode_t start_focus_mode = CAM_FOCUS_MODE_RELEASE;
++static int OV5640_AutoFocus(struct ov5640_device *dev, int focus_mode);
++
+ static void do_download(struct work_struct *work)
+ {
+ 	struct ov5640_device *dev = container_of(work, struct ov5640_device, dl_work);
+@@ -1033,6 +1207,10 @@ static void do_download(struct work_struct *work)
+ 		}
+ 	}
+ 	dev->firmware_ready = 1;
++	if (start_focus_mode) {
++		OV5640_AutoFocus(dev,(int)start_focus_mode);
++		start_focus_mode = CAM_FOCUS_MODE_RELEASE;
++	}
+ }
+ 
+ void OV5640_init_regs(struct ov5640_device *dev)
+@@ -1622,7 +1800,7 @@ void OV5640_set_param_effect(struct ov5640_device *dev,enum camera_effect_flip_e
+ * GLOBALS AFFECTED
+ *
+ *************************************************************************/
+-void OV5640_set_param_banding(struct ov5640_device *dev,enum  camera_night_mode_flip_e banding)
++static void OV5640_set_param_banding(struct ov5640_device *dev,enum  camera_night_mode_flip_e banding)
+ {
+ 	struct i2c_client *client = v4l2_get_subdevdata(&dev->sd);
+     unsigned char buf[4];
+@@ -1638,7 +1816,7 @@ void OV5640_set_param_banding(struct ov5640_device *dev,enum  camera_night_mode_
+     }
+     }
+ 
+-int OV5640_AutoFocus(struct ov5640_device *dev, int focus_mode)
++static int OV5640_AutoFocus(struct ov5640_device *dev, int focus_mode)
+ {
+ 	struct i2c_client *client = v4l2_get_subdevdata(&dev->sd);
+ 	int ret = 0;
+@@ -1689,6 +1867,34 @@ int OV5640_AutoFocus(struct ov5640_device *dev, int focus_mode)
+ 
+ }    /* OV5640_AutoFocus */
+ 
++static int OV5640_FlashCtrl(struct ov5640_device *dev, int flash_mode)
++{
++	struct i2c_client *client = v4l2_get_subdevdata(&dev->sd);
++	int ret = 0;
++    int i = 0;
++    
++	switch (flash_mode) {
++        case FLASHLIGHT_ON:
++    	case FLASHLIGHT_AUTO:
++    	case FLASHLIGHT_TORCH:
++            if (dev->platform_dev_data.flash_ctrl)
++            	if(dev->platform_dev_data.flash_ctrl->flashlight_on)
++            		dev->platform_dev_data.flash_ctrl->flashlight_on();
++            printk("flash on\n");
++            break;
++        case FLASHLIGHT_OFF:
++     		if (dev->platform_dev_data.flash_ctrl)
++            	if(dev->platform_dev_data.flash_ctrl->flashlight_off)
++            		dev->platform_dev_data.flash_ctrl->flashlight_off();
++            printk("flash off\n");
++        default:
++            printk("this flash mode not support yet\n");
++            break;
++    }
++    return ret;
++
++}    /* OV5640_FlashCtrl */
++
+ static resulution_size_type_t get_size_type(int width, int height)
+ {
+ 	resulution_size_type_t rv = SIZE_NULL;
+@@ -1839,6 +2045,15 @@ static int ov5640_setting(struct ov5640_device *dev,int PROP_ID,int value )
+ 	case V4L2_CID_FOCUS_AUTO:
+         if (dev->firmware_ready) 
+         	ret = OV5640_AutoFocus(dev,value);
++        else if (value == CAM_FOCUS_MODE_CONTI_VID ||
++        		value == CAM_FOCUS_MODE_CONTI_PIC)
++        	start_focus_mode = value;
++        else
++        	ret = -1;
++        break;
++    case V4L2_CID_BACKLIGHT_COMPENSATION:
++    	if (dev->platform_dev_data.flash_support) 
++        	ret = OV5640_FlashCtrl(dev,value);
+         else
+         	ret = -1;
+         break;
+@@ -2244,8 +2459,6 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
+ 	fh->height        = f->fmt.pix.height;
+ 	fh->vb_vidq.field = f->fmt.pix.field;
+ 	fh->type          = f->type;
+-    //fh->height = 720;
+-    //fh->width = 1280;
+     printk("system aquire ...fh->height=%d, fh->width= %d\n",fh->height,fh->width);//potti
+ #if 1
+     if(f->fmt.pix.pixelformat==V4L2_PIX_FMT_RGB24){
+@@ -2273,19 +2486,6 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
+     }
+     
+ #endif
+-#ifdef CONFIG_VIDEO_AMLOGIC_FLASHLIGHT	
+-	if (dev->platform_dev_data.flash_support) {
+-		if (f->fmt.pix.pixelformat == V4L2_PIX_FMT_RGB24) {
+-			if (get_flashlightflag() == FLASHLIGHT_ON) {
+-				set_flashlight(true);
+-			}
+-		} else if(f->fmt.pix.pixelformat == V4L2_PIX_FMT_NV21){
+-			if (get_flashlightflag() != FLASHLIGHT_TORCH) {
+-				set_flashlight(false);
+-			}		
+-		}
+-	}
+-#endif	
+     ret = 0;
+ out:
+     mutex_unlock(&q->vb_lock);
+@@ -2465,6 +2665,12 @@ static int vidioc_queryctrl(struct file *file, void *priv,
+                 struct v4l2_queryctrl *qc)
+ {
+ 	int i;
++	struct ov5640_fh *fh = priv;
++	struct ov5640_device *dev = fh->dev;
++	
++	if (!dev->platform_dev_data.flash_support 
++			&& qc->id == V4L2_CID_BACKLIGHT_COMPENSATION)
++			return -EINVAL;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(ov5640_qctrl); i++)
+     	if (qc->id && qc->id == ov5640_qctrl[i].id) {
+@@ -2693,6 +2899,9 @@ static int ov5640_close(struct file *file)
+     	dev->platform_dev_data.device_uninit();
+     	printk("+++%s found a uninit function, and run it..\n", __func__);
+     }
++    if (dev->platform_dev_data.flash_ctrl)
++		if(dev->platform_dev_data.flash_ctrl->flashlight_off)
++			dev->platform_dev_data.flash_ctrl->flashlight_off();
+ 	msleep(2); 
+ #ifdef CONFIG_ARCH_MESON6
+ 	switch_mod_gate_by_name("ge2d", 0);
+@@ -2814,6 +3023,7 @@ static int ov5640_probe(struct i2c_client *client,
+     	t->platform_dev_data.device_init=plat_dat->device_init;
+     	t->platform_dev_data.device_uninit=plat_dat->device_uninit;
+     	t->platform_dev_data.flash_support=plat_dat->flash_support;
++    	t->platform_dev_data.flash_ctrl	= plat_dat->flash_ctrl;
+     	if(plat_dat->video_nr>=0)  video_nr=plat_dat->video_nr;
+     	if(t->platform_dev_data.device_init) {
+         	t->platform_dev_data.device_init();

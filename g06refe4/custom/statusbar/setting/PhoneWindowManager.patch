@@ -1,0 +1,82 @@
+diff --git a/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java b/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
+index e4b9357..6f543c6 100755
+--- a/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
++++ b/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
+@@ -493,7 +493,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+     private boolean mVolumeUpKeyTriggered;
+     private boolean mPowerKeyTriggered;
+     private long mPowerKeyTime;
+-
++    private int mStatusHideEnable;
+     ShortcutManager mShortcutManager;
+     PowerManager.WakeLock mBroadcastWakeLock;
+ 
+@@ -539,6 +539,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                     Settings.Secure.DEFAULT_INPUT_METHOD), false, this);
+             resolver.registerContentObserver(Settings.System.getUriFor(
+                     "fancy_rotation_anim"), false, this);
++            resolver.registerContentObserver(Settings.System.getUriFor(
++            Settings.System.STATUSBAR_HIDE_ENABLE),false,this);
+             updateSettings();
+         }
+ 
+@@ -974,7 +976,16 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+             mHdmiRotation = mLandscapeRotation;
+         }
+     }
+-
++
++        private void HideStatusbarSettings(){
++        ContentResolver resolver = mContext.getContentResolver();
++        mStatusHideEnable = Settings.System.getInt(resolver,Settings.System.STATUSBAR_HIDE_ENABLE,0);
++             if(mStatusHideEnable==1)
++                 mStatusBarCanHide = true;
++             else 
++                 mStatusBarCanHide = false;
++        }
++        
+     public void updateSettings() {
+         ContentResolver resolver = mContext.getContentResolver();
+         boolean updateRotation = false;
+@@ -988,8 +999,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                     Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR,
+                     Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR_DEFAULT);
+             int accelerometerDefault = Settings.System.getInt(resolver,
+-                    Settings.System.ACCELEROMETER_ROTATION, DEFAULT_ACCELEROMETER_ROTATION);
+-            
++                    Settings.System.ACCELEROMETER_ROTATION, DEFAULT_ACCELEROMETER_ROTATION);
++                    HideStatusbarSettings();
+             // set up rotation lock state
+             mUserRotationMode = (accelerometerDefault == 0)
+                 ? WindowManagerPolicy.USER_ROTATION_LOCKED
+@@ -2569,6 +2580,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                  topIsFullscreen = (lp.flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0;
+             }
+             else{
++                HideStatusbarSettings();
+             if (DEBUG_LAYOUT) Log.i(TAG, "force=" + mForceStatusBar
+                     + " top=" + mTopFullscreenOpaqueWindowState);
+             if (mForceStatusBar) {
+@@ -2587,11 +2599,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                 // has the FLAG_FULLSCREEN set.  Not sure if there is another way that to be the
+                 // case though.
+                 if (topIsFullscreen ||
+-                    ((SystemProperties.getInt("ro.platform.has.1080scale", 0) == 2) && SystemProperties.getBoolean("vplayer.hideStatusBar.enable", false))) {
++                    ((SystemProperties.getInt("ro.platform.has.1080scale", 0) == 2) && SystemProperties.getBoolean("vplayer.hideStatusBar.enable", false))||(mStatusHideEnable==1)? true:false) {
+                     if (mStatusBarCanHide ||
+ //                        mHdmiPlugged ||
+                         SystemProperties.getBoolean("tv.hideStatusBar.enable",false) ||
+-                        SystemProperties.getBoolean("vplayer.hideStatusBar.enable",false)) {
++                        SystemProperties.getBoolean("vplayer.hideStatusBar.enable",false)||(mStatusHideEnable==1)? true:false) {
+                         if (DEBUG_LAYOUT) Log.v(TAG, "** HIDING status bar");
+                         if (mStatusBar.hideLw(true)) {
+                             changes |= FINISH_LAYOUT_REDO_LAYOUT;
+@@ -3501,7 +3513,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+         synchronized (mLock) {
+             int sensorRotation = mOrientationListener.getProposedRotation(); // may be -1
+             if (sensorRotation < 0) {
+-                sensorRotation = lastRotation;
++                sensorRotation = 1;  //sensorRotation = lastRotation;
+             }
+ 
+             final int preferredRotation;

@@ -1,0 +1,259 @@
+diff --git a/services/java/com/android/server/AlarmManagerService.java b/services/java/com/android/server/AlarmManagerService.java
+old mode 100644
+new mode 100755
+index b8c44d9..26ef2d3
+--- a/services/java/com/android/server/AlarmManagerService.java
++++ b/services/java/com/android/server/AlarmManagerService.java
+@@ -44,6 +44,7 @@ import java.io.FileDescriptor;
+ import java.io.PrintWriter;
+ import java.text.SimpleDateFormat;
+ import java.util.ArrayList;
++import java.util.List;
+ import java.util.Calendar;
+ import java.util.Collections;
+ import java.util.Comparator;
+@@ -52,6 +53,11 @@ import java.util.HashMap;
+ import java.util.Iterator;
+ import java.util.Map;
+ import java.util.TimeZone;
++import java.io.FileInputStream;
++import java.io.InputStreamReader;
++import java.io.BufferedReader;
++import android.util.Log;
++import android.app.ActivityManager;
+ 
+ class AlarmManagerService extends IAlarmManager.Stub {
+     // The threshold for how long an alarm can be late before we print a
+@@ -67,7 +73,7 @@ class AlarmManagerService extends IAlarmManager.Stub {
+     // Alignment quantum for inexact repeating alarms
+     private static final long QUANTUM = AlarmManager.INTERVAL_FIFTEEN_MINUTES;
+ 
+-    private static final String TAG = "AlarmManager";
++    private static final String TAG = "AlarmManagerService";
+     private static final String ClockReceiver_TAG = "ClockReceiver";
+     private static final boolean localLOGV = false;
+     private static final int ALARM_EVENT = 1;
+@@ -85,6 +91,7 @@ class AlarmManagerService extends IAlarmManager.Stub {
+     private final ArrayList<Alarm> mElapsedRealtimeWakeupAlarms = new ArrayList<Alarm>();
+     private final ArrayList<Alarm> mElapsedRealtimeAlarms = new ArrayList<Alarm>();
+     private final IncreasingTimeOrder mIncreasingTimeOrder = new IncreasingTimeOrder();
++    private final ArrayList<AppBlacklistItem> mAppBlacklist = new ArrayList<AppBlacklistItem>();
+     
+     private int mDescriptor;
+     private int mBroadcastRefCount = 0;
+@@ -145,6 +152,24 @@ class AlarmManagerService extends IAlarmManager.Stub {
+         } else {
+             Slog.w(TAG, "Failed to open alarm driver. Falling back to a handler.");
+         }
++
++       try{
++           BufferedReader br = new BufferedReader(new InputStreamReader(
++                new FileInputStream("/system/etc/alarm_blacklist.txt")));
++
++            String line ="";
++            AppBlacklistItem backitem= null;
++            while ((line = br.readLine()) != null){
++                if (localLOGV)  Log.d(TAG, "black alarm" +line);
++                String nametype[] = line.split(":");
++                backitem = new AppBlacklistItem(nametype[0], nametype[1]);
++                mAppBlacklist.add(backitem);
++            }
++
++            br.close();
++        }catch(java.io.FileNotFoundException ex){
++        }catch(java.io.IOException ex){
++        }
+     }
+     
+     protected void finalize() throws Throwable {
+@@ -158,16 +183,105 @@ class AlarmManagerService extends IAlarmManager.Stub {
+     public void set(int type, long triggerAtTime, PendingIntent operation) {
+         setRepeating(type, triggerAtTime, 0, operation);
+     }
+-    
++
++   /*
++    public void set(int type, long triggerAtTime, PendingIntent operation, int pid) {
++        Log.d(TAG, "set 1 new type is "+type+" package "+operation.getTargetPackage());
++
++        if( type == AlarmManager.RTC ||type == AlarmManager.ELAPSED_REALTIME ){
++            setRepeating(type, triggerAtTime, 0, operation);
++            return;
++        }
++
++        String targetPackage = null;
++        int newType = type;
++
++        targetPackage = operation.getTargetPackage();
++
++        if(targetPackage == null){
++            ActivityManager am = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
++            List<ActivityManager.RunningAppProcessInfo> list = am.getRunningAppProcesses();
++            for (int i = 0; i < list.size(); i++) {
++                if( pid ==  list.get(i).pid){
++                    targetPackage = list.get(i).processName;
++                    Log.d(TAG, "Got process name from am: " +targetPackage);
++                    break;
++                }
++            }
++        }
++
++        if(targetPackage == null){
++            try{
++                BufferedReader br = new BufferedReader(new InputStreamReader(
++                new FileInputStream("/proc/"+pid+"/status")));
++                String line = br.readLine();
++                if( line != null){
++                   targetPackage = line.substring(6);
++                    Log.d(TAG, "Got process name from am " +targetPackage);
++                }
++
++                br.close();
++            }catch(java.io.FileNotFoundException ex){
++            }catch(java.io.IOException ex){
++            }
++        }
++        if(targetPackage != null){
++            Iterator<AppBlacklistItem> it = mAppBlacklist.iterator();
++            while (it.hasNext()) {
++                AppBlacklistItem blacklisItem = it.next();
++                if (blacklisItem.name.equals(targetPackage)) {
++                    Log.d(TAG, targetPackage + "in blacklist, type is "+blacklisItem.type );
++                    if(blacklisItem.type == AppBlacklistItem.REMOVE){
++                        return;
++                    }else{
++                        if( AlarmManager.RTC_WAKEUP== type ) newType = AlarmManager.RTC;
++                        if( AlarmManager.ELAPSED_REALTIME_WAKEUP== type ) newType = AlarmManager.ELAPSED_REALTIME;
++                        break;
++                    }
++                }
++            }
++        }
++
++        setRepeating(newType, triggerAtTime, 0, operation);
++    }
++    */
++
+     public void setRepeating(int type, long triggerAtTime, long interval, 
+             PendingIntent operation) {
++
+         if (operation == null) {
+             Slog.w(TAG, "set/setRepeating ignored because there is no intent");
+             return;
+         }
++
++        if (localLOGV)  Log.d(TAG, "setRepeating type is "+type+" package "+operation.getTargetPackage());
++        int newType = type;
++        if( type == AlarmManager.RTC_WAKEUP||type == AlarmManager.ELAPSED_REALTIME_WAKEUP){
++            String targetPackage = null;
++
++            targetPackage = operation.getTargetPackage();
++
++            if(targetPackage != null){
++                Iterator<AppBlacklistItem> it = mAppBlacklist.iterator();
++                while (it.hasNext()) {
++                    AppBlacklistItem blacklisItem = it.next();
++                    if (blacklisItem.name.equals(targetPackage)) {
++                        Log.d(TAG, targetPackage + " in blacklist, type is "+blacklisItem.type );
++                        if(blacklisItem.type == AppBlacklistItem.REMOVE){
++                            return;
++                        }else{
++                            if( AlarmManager.RTC_WAKEUP== type ) newType = AlarmManager.RTC;
++                            if( AlarmManager.ELAPSED_REALTIME_WAKEUP== type ) newType = AlarmManager.ELAPSED_REALTIME;
++                            break;
++                        }
++                    }
++                }
++            }
++        }
++
+         synchronized (mLock) {
+             Alarm alarm = new Alarm();
+-            alarm.type = type;
++            alarm.type = newType;
+             alarm.when = triggerAtTime;
+             alarm.repeatInterval = interval;
+             alarm.operation = operation;
+@@ -480,10 +594,13 @@ class AlarmManagerService extends IAlarmManager.Stub {
+                             pw.println(fe.getKey().getIntent().toShortString(false, true, false));
+                 }
+             }
++            pw.println(" ");
++            pw.println("  App Alarm Blacklist:");
++            dumpBlackList(pw);
+         }
+     }
+ 
+-    private static final void dumpAlarmList(PrintWriter pw, ArrayList<Alarm> list,
++    private final void dumpAlarmList(PrintWriter pw, ArrayList<Alarm> list,
+             String prefix, String label, long now) {
+         for (int i=list.size()-1; i>=0; i--) {
+             Alarm a = list.get(i);
+@@ -492,6 +609,16 @@ class AlarmManagerService extends IAlarmManager.Stub {
+             a.dump(pw, prefix + "  ", now);
+         }
+     }
++
++    private  final void dumpBlackList(PrintWriter pw) {
++        for (int i=mAppBlacklist.size()-1; i>=0; i--) {
++            AppBlacklistItem a = mAppBlacklist.get(i);
++            pw.print(" #");
++            pw.print(i);
++            pw.print(": ");
++            a.dump(pw);
++        }
++    }
+     
+     private native int init();
+     private native void close(int fd);
+@@ -576,6 +703,50 @@ class AlarmManagerService extends IAlarmManager.Stub {
+             return 0;
+         }
+     }
++
++    private static class AppBlacklistItem{
++        public int type;
++        public String name;
++
++        public static final int REPlACE = 0;     //replace with non-wakeup alarm
++        public static final int REMOVE = 1;     //remove this alarm
++
++        public AppBlacklistItem(){
++            type = REMOVE;
++            name = null;
++        }
++
++        public AppBlacklistItem(String inName, String inType){
++            name = inName;
++            if("remove".equals(inType))
++                type = REMOVE;
++            else
++                type = REPlACE;
++        }
++
++        @Override
++        public String toString()
++        {
++            StringBuilder sb = new StringBuilder(128);
++            sb.append("AppBlacklistItem{");
++            sb.append(Integer.toHexString(System.identityHashCode(this)));
++            sb.append(" type ");
++            sb.append(type);
++            sb.append(" ");
++            sb.append(name);
++            sb.append('}');
++            return sb.toString();
++        }
++
++        public void dump(PrintWriter pw) {
++            pw.print(" type=");
++            if(REPlACE == type)
++                pw.print(" REPLACE");
++            else
++                pw.print(" REMOVE");
++            pw.print(" name="); pw.println(name);
++        }
++    }
+     
+     private static class Alarm {
+         public int type;

@@ -1,0 +1,15 @@
+diff --git a/src/com/android/settings/widget/SettingsAppWidgetProvider.java b/src/com/android/settings/widget/SettingsAppWidgetProvider.java
+old mode 100644
+new mode 100755
+index 656d072..fee372d
+--- a/src/com/android/settings/widget/SettingsAppWidgetProvider.java
++++ b/src/com/android/settings/widget/SettingsAppWidgetProvider.java
+@@ -97,7 +97,7 @@ public class SettingsAppWidgetProvider extends AppWidgetProvider {
+     /**
+      * Minimum and maximum brightnesses.  Don't go to 0 since that makes the display unusable
+      */
+-    private static final int MINIMUM_BACKLIGHT = android.os.Power.BRIGHTNESS_DIM + 10;
++    private static final int MINIMUM_BACKLIGHT = android.os.Power.BRIGHTNESS_DIM;
+     private static final int MAXIMUM_BACKLIGHT = android.os.Power.BRIGHTNESS_ON;
+     private static final int DEFAULT_BACKLIGHT = (int) (android.os.Power.BRIGHTNESS_ON * 0.4f);
+     /** Minimum brightness at which the indicator is shown at half-full and ON */

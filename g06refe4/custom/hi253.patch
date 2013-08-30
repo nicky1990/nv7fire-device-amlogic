@@ -1,0 +1,196 @@
+diff --git a/drivers/amlogic/camera/hi253.c b/drivers/amlogic/camera/hi253.c
+index e3e72c2..fae5958 100755
+--- a/drivers/amlogic/camera/hi253.c
++++ b/drivers/amlogic/camera/hi253.c
+@@ -410,7 +410,7 @@ struct aml_camera_i2c_fig_s HI253_script[] ={
+ /////// PAGE 0 START ///////      
+ {0x03, 0x00},                   
+ {0x10, 0x11}, // Sub1/2_Preview2
+-{0x11, 0x90},  //92                 
++{0x11, 0x91},  //92                 
+ {0x12, 0x24},  //00                 
+ {0x0b, 0xaa}, // ESD Check Regis
+ {0x0c, 0xaa}, // ESD Check Regis
+@@ -608,7 +608,7 @@ struct aml_camera_i2c_fig_s HI253_script[] ={
+ {0x41, 0x10}, // DYOFS  //00        
+ {0x48, 0x88},                   
+ {0x60, 0x67},//6b AG ratio  jack
+-{0x61, 0x75}, //7e //8e //88 //7
++{0x61, 0x75}, //7e //8e //88 //75
+ {0x62, 0x80}, //7e //8e //88 //8
+ {0x63, 0x50}, //Double_AG 50->30
+ {0x64, 0x41},                   
+@@ -1036,9 +1036,10 @@ struct aml_camera_i2c_fig_s HI253_script[] ={
+ {0x03, 0x17},                   
+ {0x10, 0xf7},                   
+ ///00//// PAGE 20 START ///////   
+-{0x03, 0x20},                   
++{0x03, 0x20},   
++{0x10, 0x1c},                 
+ {0x11, 0x1c},                   
+-{0x18, 0x30},                   
++//{0x18, 0x38},                   
+ {0x1a, 0x08},                   
+ {0x20, 0x01}, //05_lowtemp Y Mea
+ {0x21, 0x30},                   
+@@ -1048,7 +1049,7 @@ struct aml_camera_i2c_fig_s HI253_script[] ={
+ {0x28, 0xe7},                   
+ {0x29, 0x0d}, //20100305 ad->0d 
+ {0x2a, 0xff},                   
+-{0x2b, 0x34}, //f4->Adaptive on 
++{0x2b, 0xf4}, //f4->Adaptive on 
+ {0x2c, 0xc2},                   
+ {0x2d, 0xcf},  //fe->AE Speed op
+ {0x2e, 0x33},                   
+@@ -1096,23 +1097,23 @@ struct aml_camera_i2c_fig_s HI253_script[] ={
+ {0x7a, 0x23}, //23              
+ {0x7b, 0x22}, //22              
+ {0x7d, 0x23},                   
+-{0x83, 0x01}, //EXP Normal 33.33
+-{0x84, 0x6e},                   
+-{0x85, 0x36},                   
++{0x83, 0x05}, //EXP Normal 33.33
++{0x84, 0x7e},                   
++{0x85, 0x40},                   
+ {0x86, 0x01}, //EXPMin 5859.38 f
+ {0x87, 0xf4},                   
+ {0x88, 0x05}, //EXP Max 10.00 fp
+-{0x89, 0xb8},                   
+-{0x8a, 0xd8},                   
+-{0x8B, 0x7a}, //EXP100          
+-{0x8C, 0x12},                   
+-{0x8D, 0x65}, //EXP120          
+-{0x8E, 0x90},                   
++{0x89, 0x7e},                   
++{0x8a, 0x40},                   
++{0x8B, 0x75}, //EXP100          
++{0x8C, 0x30},                   
++{0x8D, 0x61}, //EXP120          
++{0x8E, 0xa8},                   
+ {0x9c, 0x17}, //EXP Limit 488.28
+ {0x9d, 0x70},                   
+ {0x9e, 0x01}, //EXP Unit        
+ {0x9f, 0xf4},                   
+-{0xb0, 0x18},                   
++{0xb0, 0x80},                   
+ {0xb1, 0x14}, //ADC 400->560    
+ {0xb2, 0x80},//a0               
+ {0xb3, 0x18},                   
+@@ -1132,7 +1133,8 @@ struct aml_camera_i2c_fig_s HI253_script[] ={
+ {0xc3, 0x18}, //2b              
+ {0xc4, 0x10}, //08              
+ {0xc8, 0x80},                   
+-{0xc9, 0x40},                   
++{0xc9, 0x40},     
++//{0x18, 0x30},               
+ ///00//// PAGE 22 START ///////   
+ {0x03, 0x22},                   
+ {0x10, 0xfd},                   
+@@ -1147,7 +1149,7 @@ struct aml_camera_i2c_fig_s HI253_script[] ={
+ {0x41, 0x55},                   
+ {0x42, 0x33},                   
+ {0x46, 0x00},                   
+-{0x80, 0x30},//40               
++{0x80, 0x45},//40               
+ {0x81, 0x20},                   
+ {0x82, 0x3e},                   
+ {0x83, 0x53},                   
+@@ -1253,7 +1255,7 @@ void HI253_init_regs(struct hi253_device *dev)
+ 	
+     	buf[0] = i2c_get_byte_add8(client, 0x04);
+ 	
+-	printk("#####[%s(%d)]:buf[0] = 0x%x\n", __FUNCTION__, __LINE__, buf[0]);
++	//printk("#####[%s(%d)]:buf[0] = 0x%x\n", __FUNCTION__, __LINE__, buf[0]);
+ 	
+     while(1)
+     {
+@@ -1339,8 +1341,8 @@ void HI253_set_param_wb(struct hi253_device *dev,enum  camera_wb_flip_e para)//w
+ 					{
+ 						{0x03 , 0x22},
+ 						{0x11 , 0x2e},
+-						{0x80 , 0x30},
+-						{0x81 , 0x28},
++						{0x80 , 0x4a},
++						//{0x81 , 0x28},
+ 						{0x82 , 0x30},
+ 						{0x83 , 0x55},
+ 						{0x84 , 0x16},
+@@ -1358,6 +1360,7 @@ void HI253_set_param_wb(struct hi253_device *dev,enum  camera_wb_flip_e para)//w
+ 					i++;
+ 				}
+ 			}
++			msleep(100);
+ 			break;
+ 
+ 		case CAM_WB_CLOUD: //cloud
+@@ -1936,7 +1939,8 @@ void HI253_set_night_mode(struct hi253_device *dev,enum  camera_night_mode_flip_
+ 	{
+ 		//i2c_put_byte(client,0x0312 , 0x08); //Disable night mode  1/2 Frame rate
+ 	}
+-
++	msleep(150);
++	printk("set camera  night\n");
+ }    /* HI253_NightMode */
+ void HI253_set_param_banding(struct hi253_device *dev,enum  camera_night_mode_flip_e banding)
+ {
+@@ -2002,7 +2006,13 @@ printk(KERN_INFO " set camera  HI253_set_resolution1111=w=%d,h=%d. \n ",width,he
+ 				struct aml_camera_i2c_fig_s regs[]=
+ 					{
+ 						{0x03 , 0x00},
+-						{0x10 , 0x11},//0x11					
++						{0x10 , 0x11},//0x11		
++						{0x03, 0x20},	
++						{0x10, 0x1c},	
++						{0x83, 0x05}, //EXP Normal 33.33
++						{0x84, 0x7e},                   
++						{0x85, 0x40},			
++						{0x10, 0x9c},	
+ 						{0xff , 0xff},
+ 					};
+ 				int i=0;
+@@ -2017,6 +2027,7 @@ printk(KERN_INFO " set camera  HI253_set_resolution1111=w=%d,h=%d. \n ",width,he
+ 			}
+ 			#endif
+ 			  mdelay(100);
++			  msleep(1000);
+ 			  hi253_h_active=800;
+            hi253_v_active=600;
+ 	    }
+@@ -2042,7 +2053,7 @@ printk(KERN_INFO " set camera  HI253_set_resolution1111=w=%d,h=%d. \n ",width,he
+ 			}
+ 			
+ 		
+-			  mdelay(100);
++			  mdelay(150);
+ 			 hi253_h_active=1600;
+            hi253_v_active=1200;
+         printk(KERN_INFO " set camera  HI253_set_resolution0000=w=%d,h=%d. \n ",width,height);
+@@ -2825,7 +2836,7 @@ static int hi253_open(struct file *file)
+ 		printk("+++found a init function, and run it..\n");
+ 	}
+ 	HI253_init_regs(dev);
+-	msleep(40);
++	msleep(20);
+ 	mutex_lock(&dev->mutex);
+ 	dev->users++;
+ 	if (dev->users > 1) {
+@@ -3133,13 +3144,13 @@ static int hi253_resume(struct i2c_client *client)
+ {
+ 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+ 	struct hi253_device *t = to_dev(sd);
+-    struct hi253_fh  *fh = to_fh(t);
+-    tvin_parm_t para;
+-    para.port  = TVIN_PORT_CAMERA;
+-    para.fmt_info.fmt = TVIN_SIG_FMT_CAMERA_1280X720P_30Hz;
+-    HI253_init_regs(t); 
++	struct hi253_fh  *fh = to_fh(t);
++	tvin_parm_t para;
++	para.port  = TVIN_PORT_CAMERA;
++	para.fmt_info.fmt = TVIN_SIG_FMT_CAMERA_1280X720P_30Hz;
+ 	if(fh->stream_on == 1){
+-        start_tvin_service(0,&para);
++		HI253_init_regs(t); 
++		start_tvin_service(0,&para);
+ 	}       	
+ 	return 0;
+ }

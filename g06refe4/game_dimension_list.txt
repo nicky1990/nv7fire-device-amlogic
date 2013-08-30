@@ -1,0 +1,3 @@
+com.gameloft.android.GAND.GloftAsphalt5.asphalt5: 800X480
+com.nexon.kartriderrush.android.olleh:800X480
+com.gameloft.android.TBFV.GloftLGolf2.ML:800X480

@@ -1,0 +1,73 @@
+diff --git a/roots.c b/roots.c
+index 56d3424..4e28f0b 100755
+--- a/roots.c
++++ b/roots.c
+@@ -170,7 +170,7 @@ int smart_device_mounted(Volume *vol) {
+                 LOGW("try mount %s ...\n", device_name);
+ 
+                 if (!mount(device_name, vol->mount_point, vol->fs_type,
+-                           MS_NOATIME | MS_NODEV | MS_NODIRATIME, "")) {
++                           MS_NOATIME | MS_NODEV | MS_NODIRATIME, "utf8")) {
+                     mounted_device = device_name;
+                     goto mounted;
+                 }
+@@ -180,14 +180,14 @@ int smart_device_mounted(Volume *vol) {
+             LOGW("try mount %s ...\n", device_name);
+ 
+             if (!mount(device_name, vol->mount_point, vol->fs_type,
+-                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "")) {
++                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "utf8")) {
+                 mounted_device = device_name;
+                 goto mounted;
+             }
+         } else {
+             LOGW("try mount %s ...\n", vol->device);
+             if (!mount(vol->device, vol->mount_point, vol->fs_type,
+-                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "")) {
++                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "utf8")) {
+                 mounted_device = device_name;
+                 goto mounted;
+             }
+@@ -206,7 +206,7 @@ int smart_device_mounted(Volume *vol) {
+                 LOGW("try mount %s ...\n", device_name);
+ 
+                 if (!mount(device_name, vol->mount_point, vol->fs_type,
+-                           MS_NOATIME | MS_NODEV | MS_NODIRATIME, "")) {
++                           MS_NOATIME | MS_NODEV | MS_NODIRATIME, "utf8")) {
+                     mounted_device = device_name;
+                     goto mounted;
+                 }
+@@ -216,14 +216,14 @@ int smart_device_mounted(Volume *vol) {
+             LOGW("try mount %s ...\n", device_name);
+ 
+             if (!mount(device_name, vol->mount_point, vol->fs_type,
+-                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "")) {
++                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "utf8")) {
+                 mounted_device = device_name;
+                 goto mounted;
+             }
+         } else {
+             LOGW("try mount %s ...\n", vol->device2);
+             if (!mount(vol->device2, vol->mount_point, vol->fs_type,
+-                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "")) {
++                       MS_NOATIME | MS_NODEV | MS_NODIRATIME, "utf8")) {
+                 mounted_device = device_name;
+                 goto mounted;
+             }
+@@ -293,14 +293,14 @@ int ensure_path_mounted(const char* path) {
+             return -1;
+         } else {
+             result = mount(v->device, v->mount_point, v->fs_type,
+-                           MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
++                           MS_NOATIME | MS_NODEV | MS_NODIRATIME, "utf8");
+             if (result == 0) return 0;
+ 
+             if (v->device2) {
+                 LOGW("failed to mount %s (%s); trying %s\n",
+                      v->device, strerror(errno), v->device2);
+                 result = mount(v->device2, v->mount_point, v->fs_type,
+-                               MS_NOATIME | MS_NODEV | MS_NODIRATIME, "");
++                               MS_NOATIME | MS_NODEV | MS_NODIRATIME, "utf8");
+                 if (result == 0) return 0;
+             }
+ 

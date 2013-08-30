@@ -1,0 +1,32 @@
+diff --git a/services/java/com/android/server/InputMethodManagerService.java b/services/java/com/android/server/InputMethodManagerService.java
+old mode 100644
+new mode 100755
+index 7d4faea..18678de
+--- a/services/java/com/android/server/InputMethodManagerService.java
++++ b/services/java/com/android/server/InputMethodManagerService.java
+@@ -2093,6 +2093,25 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
+ 
+         String defaultIme = Settings.Secure.getString(mContext
+                 .getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
++        if ( defaultIme == null )
++        {
++            final Resources res = mContext.getResources();
++            try
++            {
++                  //frameworks\base\core\res\res\values\config.xml
++                  String myIME = res.getString( com.android.internal.R.string.config_default_input_method );
++                  if ( myIME != null && myIME.length() > 0 )
++                  {
++                     Settings.Secure.putString( mContext.getContentResolver(),
++                         Settings.Secure.DEFAULT_INPUT_METHOD,
++                         myIME );
++                  }
++            }
++           catch ( Exception e )
++           {
++           }
++       }
++
+         if (!TextUtils.isEmpty(defaultIme) && !map.containsKey(defaultIme)) {
+             if (chooseNewDefaultIMELocked()) {
+                 updateFromSettingsLocked();

@@ -1,0 +1,22 @@
+diff --git a/arch/arm/mach-meson6/clock.c b/arch/arm/mach-meson6/clock.c
+index 3e98cc2..cb7cc97 100755
+--- a/arch/arm/mach-meson6/clock.c
++++ b/arch/arm/mach-meson6/clock.c
+@@ -1131,7 +1131,7 @@ static int clk_enable_mali(struct clk *clk)
+     mali_clock_gating_unlock(mali_flags);
+ 
+ #ifdef CONFIG_CPU_FREQ_DEBUG
+-	printk(KERN_DEBUG "%s() GPU=%luMHz CPU=%luMhz\n", __FUNCTION__, clk_get_rate_gpu(NULL) / 1000000, clk_get_rate_a9(NULL) / 1000000);
++	printk(KERN_DEBUG "%s() GPU=%luMHz CPU=%luMhz\n", __FUNCTION__, (((clk_get_rate_gpu(NULL) / 1000000)*400)/333), clk_get_rate_a9(NULL) / 1000000);
+ #endif /* CONFIG_CPU_FREQ_DEBUG */
+ 
+ 	spin_unlock_irqrestore(&clockfw_lock, flags);
+@@ -1146,7 +1146,7 @@ static int clk_disable_mali(struct clk *clk)
+ 
+ 	spin_lock_irqsave(&clockfw_lock, flags);
+ #ifdef CONFIG_CPU_FREQ_DEBUG
+-	printk(KERN_INFO "%s() GPU=%luMHz CPU=%luMhz\n", __FUNCTION__, clk_get_rate_gpu(NULL) / 1000000, clk_get_rate_a9(NULL) / 1000000);
++	printk(KERN_INFO "%s() GPU=%luMHz CPU=%luMhz\n", __FUNCTION__, (((clk_get_rate_gpu(NULL) / 1000000)*400)/333), clk_get_rate_a9(NULL) / 1000000);
+ #endif /* CONFIG_CPU_FREQ_DEBUG */
+ 
+     mali_flags = mali_clock_gating_lock();

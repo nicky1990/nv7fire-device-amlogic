@@ -1,0 +1,42 @@
+diff --git a/drivers/amlogic/power/axp_power/axp-mfd.h b/drivers/amlogic/power/axp_power/axp-mfd.h
+index 843c981..3bb55db 100755
+--- a/drivers/amlogic/power/axp_power/axp-mfd.h
++++ b/drivers/amlogic/power/axp_power/axp-mfd.h
+@@ -323,18 +323,18 @@ struct axp_mfd_chip_ops {
+ #define POWER20_MODE_CHGSTATUS      (0x01)
+ #define POWER20_OTG_STATUS          (0x02)
+ #define POWER20_IC_TYPE             (0x03)
+-#define POWER20_DATA_BUFFER1        (0x04)
+-#define POWER20_DATA_BUFFER2        (0x05)
+-#define POWER20_DATA_BUFFER3        (0x06)
+-#define POWER20_DATA_BUFFER4        (0x07)
+-#define POWER20_DATA_BUFFER5        (0x08)
+-#define POWER20_DATA_BUFFER6        (0x09)
+-#define POWER20_DATA_BUFFER7        (0x0A)
+-#define POWER20_DATA_BUFFER8        (0x0B)
+-#define POWER20_DATA_BUFFER9        (0x0C)
+-#define POWER20_DATA_BUFFERA        (0x0D)
+-#define POWER20_DATA_BUFFERB        (0x0E)
+-#define POWER20_DATA_BUFFERC        (0x0F)
++#define POWER20_DATA_BUFFER0        (0x04)
++#define POWER20_DATA_BUFFER1        (0x05)
++#define POWER20_DATA_BUFFER2        (0x06)
++#define POWER20_DATA_BUFFER3        (0x07)
++#define POWER20_DATA_BUFFER4        (0x08)
++#define POWER20_DATA_BUFFER5        (0x09)
++#define POWER20_DATA_BUFFER6        (0x0A)
++#define POWER20_DATA_BUFFER7        (0x0B)
++#define POWER20_DATA_BUFFER8        (0x0C)
++#define POWER20_DATA_BUFFER9        (0x0D)
++#define POWER20_DATA_BUFFERA        (0x0E)
++#define POWER20_DATA_BUFFERB        (0x0F)
+ #define POWER20_LDO234_DC23_CTL     (0x12)
+ #define POWER20_DC2OUT_VOL          (0x23)
+ #define POWER20_LDO3_DC2_DVM        (0x25)
+@@ -580,5 +580,6 @@ extern int axp_reads(struct device *dev, int reg, int len, uint8_t *val);
+ extern int axp_update(struct device *dev, int reg, uint8_t val, uint8_t mask);
+ extern int axp_set_bits(struct device *dev, int reg, uint8_t bit_mask);
+ extern int axp_clr_bits(struct device *dev, int reg, uint8_t bit_mask);
++extern int axp_charger_set_usbcur_limit_extern(int usbcur_limit);
+ extern struct i2c_client *axp;
+ #endif /* __LINUX_PMIC_AXP_H */

@@ -1,0 +1,10 @@
+diff --git a/core/res/res/values/config.xml b/core/res/res/values/config.xml
+index 71af68a..ecbeab2 100755
+--- a/core/res/res/values/config.xml
++++ b/core/res/res/values/config.xml
+@@ -766,4 +766,5 @@
+          [bootmode]:[original USB mode]:[USB mode used]-->
+     <integer-array translatable="false" name="config_oemUsbModeOverride">
+     </integer-array>
++    <string name="config_default_input_method" translatable="false">com.baidu.input/.ImeService</string>
+ </resources>
